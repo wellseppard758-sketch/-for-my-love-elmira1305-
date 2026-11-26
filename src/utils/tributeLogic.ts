@@ -105,12 +105,12 @@ export function calculateParallaxOffsets({
   const rawProgress = (cardCenter - viewportCenter) / travelSpan;
   const progress = Math.max(-1, Math.min(1, rawProgress));
 
-  // При scale(1.16) у изображения есть запас ~8% сверху и снизу; ограничиваем 6.8%
-  const maxSafeImageShift = Math.min(Math.abs(innerIntensity), rectHeight * 0.068);
+  // При scale(1.22) у изображения есть запас ~11% сверху и снизу; ограничиваем 9.5%
+  const maxSafeImageShift = Math.min(Math.abs(innerIntensity), rectHeight * 0.095);
   const innerImageY = Number((-progress * maxSafeImageShift).toFixed(2));
 
-  // Лёгкое смещение самой карточки ограничено ±9px, чтобы карточки не касались друг друга
-  const clampedCardSpeed = Math.max(-9, Math.min(9, cardSpeed));
+  // Лёгкое смещение самой карточки ограничено ±10px, чтобы карточки не касались друг друга
+  const clampedCardSpeed = Math.max(-10, Math.min(10, cardSpeed));
   const cardFloatY = Number((progress * clampedCardSpeed).toFixed(2));
 
   return {
@@ -120,16 +120,29 @@ export function calculateParallaxOffsets({
   };
 }
 
+export type AmbientTiltVariant = 'a' | 'b' | 'c';
+
 export interface AmbientTiltConfig {
+  variant: AmbientTiltVariant;
   minDeg: number;
   maxDeg: number;
   durationSec: number;
   delaySec: number;
 }
 
+const TILT_VARIANTS: readonly {
+  variant: AmbientTiltVariant;
+  minDeg: number;
+  maxDeg: number;
+}[] = [
+  { variant: 'a', minDeg: -1.8, maxDeg: 1.8 },
+  { variant: 'b', minDeg: 1.9, maxDeg: -1.5 },
+  { variant: 'c', minDeg: -1.5, maxDeg: 2.0 },
+];
+
 /**
  * Генерирует детерминированные параметры медленного «живого» покачивания
- * (tilt) для каждой карточки Полароида, чтобы они двигались органично и несинхронно.
+ * (tilt) с фиксированными ключевыми кадрами для 100% совместимости с iOS Safari и Android.
  */
 export function getAmbientTiltConfig(
   id: string,
@@ -140,20 +153,17 @@ export function getAmbientTiltConfig(
     hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
   }
 
-  // Мягкая амплитуда 0.9°..1.45° вокруг базового наклона
-  const amplitude = Number((0.9 + ((hash % 12) / 11) * 0.55).toFixed(2));
-  const clampedBase = Math.max(-0.8, Math.min(0.8, baseTiltDegrees * 0.5));
+  const offset = baseTiltDegrees < 0 ? 0 : 1;
+  const chosen = TILT_VARIANTS[(hash + offset) % TILT_VARIANTS.length];
 
-  const minDeg = Number((clampedBase - amplitude).toFixed(2));
-  const maxDeg = Number((clampedBase + amplitude).toFixed(2));
-
-  // Медленный цикл 7.5s..11.0s и отрицательная задержка фазы для плавного старта без синхронности
-  const durationSec = Number((7.5 + ((hash >> 4) % 8) * 0.5).toFixed(2));
-  const delaySec = Number((-(((hash >> 8) % 10) * 0.65)).toFixed(2));
+  // Спокойный, но хорошо заметный на телефоне цикл 6.0s..8.4s и разброс фаз
+  const durationSec = Number((6.0 + ((hash >> 4) % 7) * 0.4).toFixed(2));
+  const delaySec = Number((-(((hash >> 8) % 9) * 0.7)).toFixed(2));
 
   return {
-    minDeg,
-    maxDeg,
+    variant: chosen.variant,
+    minDeg: chosen.minDeg,
+    maxDeg: chosen.maxDeg,
     durationSec,
     delaySec,
   };

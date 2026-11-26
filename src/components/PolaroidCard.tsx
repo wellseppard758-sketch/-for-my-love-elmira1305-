@@ -37,24 +37,26 @@ export function PolaroidCard({
 }: PolaroidCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const cardRef = useRef<HTMLElement | null>(null);
+  const cardLayerRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
+  const imgLayerRef = useRef<HTMLDivElement | null>(null);
   const resolvedSrc = resolveAssetPath(photo.src, import.meta.env.BASE_URL);
   const ambientTilt = useMemo(
     () => getAmbientTiltConfig(photo.id, photo.tiltDegrees),
     [photo.id, photo.tiltDegrees],
   );
 
-  const ambientTiltStyle = {
-    '--tilt-min': `${ambientTilt.minDeg}deg`,
-    '--tilt-max': `${ambientTilt.maxDeg}deg`,
-    '--tilt-duration': `${ambientTilt.durationSec}s`,
-    '--tilt-delay': `${ambientTilt.delaySec}s`,
-  } as CSSProperties;
+  const ambientTiltStyle: CSSProperties = {
+    animationDuration: `${ambientTilt.durationSec}s`,
+    animationDelay: `${ambientTilt.delaySec}s`,
+  };
 
   useCardParallax({
     cardRef,
+    cardLayerRef,
     frameRef,
-    innerIntensity: photo.parallaxDepth ?? 24,
+    imgLayerRef,
+    innerIntensity: photo.parallaxDepth ?? 34,
     cardSpeed: photo.parallaxSpeed ?? 0,
     disabled: isFlipped,
   });
@@ -73,13 +75,13 @@ export function PolaroidCard({
       data-parallax="true"
       data-ambient-tilt={isFlipped ? 'paused' : 'active'}
     >
-      <div className="parallax-card-layer h-full w-full">
+      <div ref={cardLayerRef} className="parallax-card-layer h-full w-full">
         <div
-          style={ambientTiltStyle}
+          style={isFlipped ? undefined : ambientTiltStyle}
           className={`perspective-1200 h-full w-full ${
             isFlipped
               ? 'polaroid-ambient-tilt-paused'
-              : 'polaroid-ambient-tilt group-hover:[animation-play-state:paused]'
+              : `polaroid-ambient-tilt polaroid-sway-${ambientTilt.variant}`
           }`}
         >
           <div
@@ -111,7 +113,10 @@ export function PolaroidCard({
                 className="relative flex-1 min-h-[200px] w-full overflow-hidden rounded-2xl bg-[#FAF0ED]"
               >
                 {!imageFailed ? (
-                  <div className="parallax-img-layer h-full w-full">
+                  <div
+                    ref={imgLayerRef}
+                    className="parallax-img-layer h-full w-full"
+                  >
                     <img
                       src={resolvedSrc}
                       alt={photo.alt}

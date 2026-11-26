@@ -127,28 +127,28 @@ test('calculateParallaxOffsets centers at 0 and stays within safe image bleed an
   assert.ok(nearBottom.innerImageY < 0);
   assert.ok(nearBottom.cardFloatY > 0);
 
-  // Компактная карточка (200px) никогда не превышает 6.8% запаса обрезки (13.6px)
+  // Компактная карточка (200px) никогда не превышает 9.5% запаса обрезки (19px)
   const compactExtreme = calculateParallaxOffsets({
     rectTop: 1500,
     rectHeight: 200,
     viewportHeight: 900,
-    innerIntensity: 40,
+    innerIntensity: 45,
     cardSpeed: 20,
   });
-  assert.ok(Math.abs(compactExtreme.innerImageY) <= 13.6);
-  assert.ok(Math.abs(compactExtreme.cardFloatY) <= 9);
+  assert.ok(Math.abs(compactExtreme.innerImageY) <= 19);
+  assert.ok(Math.abs(compactExtreme.cardFloatY) <= 10);
 });
 
-test('getAmbientTiltConfig produces gentle bounded rotation and staggered organic timing per card', () => {
+test('getAmbientTiltConfig produces concrete Safari-safe variant and staggered organic timing per card', () => {
   const a = getAmbientTiltConfig('morning-hug', -1);
   const b = getAmbientTiltConfig('park-walk', 1);
 
-  assert.ok(a.minDeg < a.maxDeg);
+  assert.ok(['a', 'b', 'c'].includes(a.variant));
   assert.ok(Math.abs(a.minDeg) <= 2.25 && Math.abs(a.maxDeg) <= 2.25);
-  assert.ok(a.durationSec >= 7.5 && a.durationSec <= 11.5);
+  assert.ok(a.durationSec >= 6.0 && a.durationSec <= 8.8);
   assert.ok(a.delaySec <= 0);
   assert.notEqual(
-    `${a.minDeg}:${a.durationSec}:${a.delaySec}`,
-    `${b.minDeg}:${b.durationSec}:${b.delaySec}`,
+    `${a.variant}:${a.durationSec}:${a.delaySec}`,
+    `${b.variant}:${b.durationSec}:${b.delaySec}`,
   );
 });
