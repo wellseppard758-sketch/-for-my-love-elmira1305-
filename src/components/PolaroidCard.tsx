@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Expand, Heart, RotateCcw } from 'lucide-react';
 import type { PhotoMemory } from '../types/tribute';
@@ -6,13 +6,26 @@ import {
   getAmbientTiltConfig,
   resolveAssetPath,
 } from '../utils/tributeLogic';
-import { useCardParallax } from '../hooks/useCardParallax';
+
+export interface ParallaxCardHandle {
+  id: string;
+  cardEl: HTMLElement;
+  cardLayerEl: HTMLDivElement | null;
+  frameEl: HTMLDivElement | null;
+  imgLayerEl: HTMLDivElement | null;
+  innerIntensity: number;
+  cardSpeed: number;
+}
 
 interface PolaroidCardProps {
   photo: PhotoMemory;
   isFlipped: boolean;
   onToggleFlip: (id: string) => void;
   onOpenLightbox: (photo: PhotoMemory) => void;
+  onRegisterParallax?: (
+    id: string,
+    handle: ParallaxCardHandle | null,
+  ) => void;
   className?: string;
 }
 
@@ -33,6 +46,7 @@ export function PolaroidCard({
   isFlipped,
   onToggleFlip,
   onOpenLightbox,
+  onRegisterParallax,
   className = '',
 }: PolaroidCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -51,15 +65,36 @@ export function PolaroidCard({
     animationDelay: `${ambientTilt.delaySec}s`,
   };
 
-  useCardParallax({
-    cardRef,
-    cardLayerRef,
-    frameRef,
-    imgLayerRef,
-    innerIntensity: photo.parallaxDepth ?? 34,
-    cardSpeed: photo.parallaxSpeed ?? 0,
-    disabled: isFlipped,
-  });
+  useEffect(() => {
+    if (!onRegisterParallax) {
+      return;
+    }
+
+    const cardEl = cardRef.current;
+    if (!cardEl) {
+      return;
+    }
+
+    onRegisterParallax(photo.id, {
+      id: photo.id,
+      cardEl,
+      cardLayerEl: cardLayerRef.current,
+      frameEl: frameRef.current,
+      imgLayerEl: imgLayerRef.current,
+      innerIntensity: photo.parallaxDepth ?? 34,
+      cardSpeed: photo.parallaxSpeed ?? 0,
+    });
+
+    return () => {
+      onRegisterParallax(photo.id, null);
+    };
+  }, [
+    onRegisterParallax,
+    photo.id,
+    photo.parallaxDepth,
+    photo.parallaxSpeed,
+    imageFailed,
+  ]);
 
   const hoverTiltClass =
     photo.tiltDegrees >= 0

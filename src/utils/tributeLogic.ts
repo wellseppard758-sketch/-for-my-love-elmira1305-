@@ -120,6 +120,91 @@ export function calculateParallaxOffsets({
   };
 }
 
+export type ParallaxPerformanceMode = 'smooth' | 'throttled' | 'static';
+
+export interface ScrollThrottleState {
+  mode: ParallaxPerformanceMode;
+  recentScrollTimestamps: number[];
+  slowFrameStreak: number;
+  criticalFrameStreak: number;
+  lastRunMs: number;
+}
+
+export function createInitialThrottleState(): ScrollThrottleState {
+  return {
+    mode: 'smooth',
+    recentScrollTimestamps: [],
+    slowFrameStreak: 0,
+    criticalFrameStreak: 0,
+    lastRunMs: -Infinity,
+  };
+}
+
+/**
+ * Оценивает частоту scroll-событий и длительность кадра, переключая параллакс
+ * в щадящий throttled-режим или статический fallback при перегрузке перерисовкой.
+ */
+export function evaluateScrollBurst(
+  state: ScrollThrottleState,
+  nowMs: number,
+  frameCostMs?: number,
+  recordScrollEvent = true,
+): ScrollThrottleState {
+  const windowStart = nowMs - 250;
+  const filtered = state.recentScrollTimestamps.filter((ts) => ts >= windowStart);
+  const recentScrollTimestamps = recordScrollEvent
+    ? [...filtered, nowMs]
+    : filtered;
+
+  let slowFrameStreak = state.slowFrameStreak;
+  let criticalFrameStreak = state.criticalFrameStreak;
+  if (typeof frameCostMs === 'number') {
+    criticalFrameStreak = frameCostMs > 55 ? state.criticalFrameStreak + 1 : 0;
+    slowFrameStreak = frameCostMs > 24 ? state.slowFrameStreak + 1 : 0;
+  }
+
+  let mode: ParallaxPerformanceMode = state.mode;
+  if (criticalFrameStreak >= 3) {
+    mode = 'static';
+  } else if (
+    mode !== 'static' &&
+    (recentScrollTimestamps.length >= 24 || slowFrameStreak >= 2)
+  ) {
+    mode = 'throttled';
+  } else if (
+    mode === 'throttled' &&
+    recentScrollTimestamps.length <= 6 &&
+    slowFrameStreak === 0 &&
+    (typeof frameCostMs !== 'number' || frameCostMs <= 16)
+  ) {
+    mode = 'smooth';
+  }
+
+  return {
+    ...state,
+    mode,
+    recentScrollTimestamps,
+    slowFrameStreak,
+    criticalFrameStreak,
+  };
+}
+
+/**
+ * Возвращает true, если с учётом текущего режима и времени последнего кадра
+ * допустимо выполнить обновление CSS-трансформаций параллакса.
+ */
+export function shouldRunParallaxFrame(
+  lastRunMs: number,
+  nowMs: number,
+  mode: ParallaxPerformanceMode,
+): boolean {
+  if (mode === 'static') {
+    return false;
+  }
+  const minIntervalMs = mode === 'throttled' ? 64 : 14;
+  return nowMs - lastRunMs >= minIntervalMs;
+}
+
 export type AmbientTiltVariant = 'a' | 'b' | 'c';
 
 export interface AmbientTiltConfig {

@@ -133,14 +133,44 @@
   animation: fade-rise-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Композитный скролл-параллакс для фотографий в Bento-сетке */
+/* Композитный скролл-параллакс: строго CSS transform без конфликтов с touch-жестами */
+.parallax-gallery {
+  touch-action: pan-y;
+}
+
 .parallax-card-layer {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  touch-action: pan-y;
   will-change: transform;
 }
 
 .parallax-img-layer {
   transform: translate3d(0, 0, 0) scale(1.22);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  pointer-events: none;
   will-change: transform;
+}
+
+/* Fallback при слишком частых scroll-событиях: плавная GPU-интерполяция между редкими кадрами */
+.parallax-fallback-throttled .parallax-card-layer,
+.parallax-fallback-throttled .parallax-img-layer {
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Статический fallback при критической нагрузке на устройство */
+.parallax-fallback-static .parallax-card-layer {
+  transform: translate3d(0, 0, 0) !important;
+  transition: transform 220ms ease-out;
+  will-change: auto;
+}
+
+.parallax-fallback-static .parallax-img-layer {
+  transform: translate3d(0, 0, 0) scale(1) !important;
+  transition: transform 220ms ease-out;
+  will-change: auto;
 }
 
 /* Автоматическое медленное покачивание (tilt) с явными углами для iOS Safari и Android */
@@ -177,6 +207,7 @@
 .polaroid-ambient-tilt {
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
+  touch-action: pan-y;
   will-change: transform;
 }
 
@@ -215,10 +246,12 @@
   }
   .parallax-card-layer {
     transform: none !important;
+    transition: none !important;
     will-change: auto;
   }
   .parallax-img-layer {
     transform: none !important;
+    transition: none !important;
     will-change: auto;
   }
   .polaroid-ambient-tilt {

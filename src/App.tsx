@@ -3,11 +3,18 @@ import { Heart, Sparkles } from 'lucide-react';
 import type { PhotoMemory } from './types/tribute';
 import { AmbientChimeEngine } from './utils/ambientAudio';
 import {
+  calculateParallaxOffsets,
+  createInitialThrottleState,
+  evaluateScrollBurst,
   getAdjacentPhotoIndex,
+  shouldRunParallaxFrame,
   toggleFlippedPhotoId,
 } from './utils/tributeLogic';
 import { LoveBurstOverlay } from './components/LoveBurstOverlay';
-import { PolaroidCard } from './components/PolaroidCard';
+import {
+  PolaroidCard,
+  type ParallaxCardHandle,
+} from './components/PolaroidCard';
 import { PhotoLightboxModal } from './components/PhotoLightboxModal';
 import { SupportButtonCard } from './components/SupportButtonCard';
 import { SecretEnvelopeCard } from './components/SecretEnvelopeCard';
@@ -143,6 +150,15 @@ export default function App() {
   const [isAmbientPlaying, setIsAmbientPlaying] = useState(false);
 
   const audioEngineRef = useRef<AmbientChimeEngine | null>(null);
+  const galleryRef = useRef<HTMLDivElement | null>(null);
+  const parallaxRegistryRef = useRef<Map<string, ParallaxCardHandle>>(
+    new Map(),
+  );
+  const flippedPhotoIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    flippedPhotoIdRef.current = flippedPhotoId;
+  }, [flippedPhotoId]);
 
   useEffect(() => {
     const engine = new AmbientChimeEngine();
@@ -152,6 +168,195 @@ export default function App() {
       audioEngineRef.current = null;
     };
   }, []);
+
+  const registerParallaxCard = useCallback(
+    (id: string, handle: ParallaxCardHandle | null) => {
+      if (handle) {
+        parallaxRegistryRef.current.set(id, handle);
+      } else {
+        parallaxRegistryRef.current.delete(id);
+      }
+    },
+    [],
+  );
+
+  // Единый passive-контроллер скролл-параллакса в App.tsx:
+  // без touchmove-перехватчиков (не мешает мобильным жестам),
+  // с пакетным чтением/записью (только CSS transform) и адаптивным fallback при частых scroll-событиях.
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    const applyModeClasses = (mode: 'smooth' | 'throttled' | 'static') => {
+      const galleryEl = galleryRef.current;
+      if (!galleryEl) {
+        return;
+      }
+      galleryEl.dataset.parallaxMode = mode;
+      galleryEl.classList.toggle(
+        'parallax-fallback-throttled',
+        mode === 'throttled',
+      );
+      galleryEl.classList.toggle(
+        'parallax-fallback-static',
+        mode === 'static',
+      );
+    };
+
+    if (prefersReducedMotion) {
+      applyModeClasses('static');
+      return;
+    }
+
+    let throttleState = createInitialThrottleState();
+    let rafId: number | null = null;
+    let trailingTimerId: number | null = null;
+    let prevFrameStartMs = 0;
+
+    const runBatchUpdate = (nowMs: number, force = false) => {
+      if (!force && !shouldRunParallaxFrame(throttleState.lastRunMs, nowMs, throttleState.mode)) {
+        return;
+      }
+
+      const workStart = performance.now();
+      const viewportHeight =
+        window.visualViewport?.height || window.innerHeight;
+      const flippedId = flippedPhotoIdRef.current;
+
+      // Фаза 1: пакетное чтение геометрии (исключает layout thrashing)
+      const measurements: Array<{
+        handle: ParallaxCardHandle;
+        cardTop: number;
+        frameHeight: number;
+      }> = [];
+
+      parallaxRegistryRef.current.forEach((handle) => {
+        const cardRect = handle.cardEl.getBoundingClientRect();
+        const frameHeight = handle.frameEl
+          ? handle.frameEl.getBoundingClientRect().height
+          : cardRect.height;
+        measurements.push({ handle, cardTop: cardRect.top, frameHeight });
+      });
+
+      // Фаза 2: пакетная запись строго через GPU CSS transform: translate3d
+      for (const { handle, cardTop, frameHeight } of measurements) {
+        if (handle.id === flippedId || throttleState.mode === 'static') {
+          if (handle.cardLayerEl) {
+            handle.cardLayerEl.style.transform = 'translate3d(0, 0px, 0)';
+          }
+          if (handle.imgLayerEl) {
+            handle.imgLayerEl.style.transform =
+              throttleState.mode === 'static'
+                ? 'translate3d(0, 0px, 0) scale(1)'
+                : 'translate3d(0, 0px, 0) scale(1.22)';
+          }
+          handle.cardEl.dataset.parallaxImgY = '0';
+          handle.cardEl.dataset.parallaxCardY = '0';
+          continue;
+        }
+
+        const { innerImageY, cardFloatY } = calculateParallaxOffsets({
+          rectTop: cardTop,
+          rectHeight: frameHeight,
+          viewportHeight,
+          innerIntensity: handle.innerIntensity,
+          cardSpeed: handle.cardSpeed,
+        });
+
+        if (handle.cardLayerEl) {
+          handle.cardLayerEl.style.transform = `translate3d(0, ${cardFloatY}px, 0)`;
+        }
+        if (handle.imgLayerEl) {
+          handle.imgLayerEl.style.transform = `translate3d(0, ${innerImageY}px, 0) scale(1.22)`;
+        }
+        handle.cardEl.dataset.parallaxImgY = String(innerImageY);
+        handle.cardEl.dataset.parallaxCardY = String(cardFloatY);
+      }
+
+      const workCost = performance.now() - workStart;
+      const rawDelta =
+        !force && prevFrameStartMs > 0 ? nowMs - prevFrameStartMs : 0;
+      prevFrameStartMs = force ? 0 : nowMs;
+
+      // Учитываем только непрерывные просадки между соседними кадрами (<140ms),
+      // чтобы обычные паузы между жестами прокрутки не считались лагом
+      const continuousFrameLag =
+        rawDelta > 34 && rawDelta < 140 ? rawDelta - 16 : 0;
+      const effectiveCost = Math.max(workCost, continuousFrameLag);
+      throttleState = {
+        ...evaluateScrollBurst(throttleState, nowMs, effectiveCost, false),
+        lastRunMs: nowMs,
+      };
+      applyModeClasses(throttleState.mode);
+    };
+
+    const scheduleFrame = (force = false) => {
+      const nowMs = performance.now();
+      throttleState = evaluateScrollBurst(throttleState, nowMs);
+      applyModeClasses(throttleState.mode);
+
+      if (throttleState.mode === 'static') {
+        return;
+      }
+
+      if (rafId === null) {
+        rafId = window.requestAnimationFrame((frameTime) => {
+          rafId = null;
+          runBatchUpdate(frameTime, force);
+        });
+      }
+
+      // Финальный доводящий кадр после остановки скролла (гарантирует точное положение в throttled-режиме)
+      if (trailingTimerId !== null) {
+        window.clearTimeout(trailingTimerId);
+      }
+      trailingTimerId = window.setTimeout(() => {
+        trailingTimerId = null;
+        prevFrameStartMs = 0;
+        if (throttleState.mode !== 'static') {
+          runBatchUpdate(performance.now(), true);
+        }
+      }, 120);
+    };
+
+    const onScroll = () => scheduleFrame(false);
+    const onResize = () => scheduleFrame(true);
+
+    applyModeClasses('smooth');
+    runBatchUpdate(performance.now(), true);
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize, { passive: true });
+    window.visualViewport?.addEventListener('resize', onResize);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+      window.visualViewport?.removeEventListener('resize', onResize);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      if (trailingTimerId !== null) {
+        window.clearTimeout(trailingTimerId);
+      }
+    };
+  }, []);
+
+  // Мгновенно выравниваем перевёрнутую карточку при клике
+  useEffect(() => {
+    const handle = flippedPhotoId
+      ? parallaxRegistryRef.current.get(flippedPhotoId)
+      : null;
+    if (handle?.cardLayerEl) {
+      handle.cardLayerEl.style.transform = 'translate3d(0, 0px, 0)';
+      handle.cardEl.dataset.parallaxCardY = '0';
+    }
+  }, [flippedPhotoId]);
 
   const triggerLoveBurst = useCallback(() => {
     setBurstCounter((prev) => prev + 1);
@@ -329,7 +534,12 @@ export default function App() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-12 lg:gap-7">
+          <div
+            ref={galleryRef}
+            data-testid="bento-parallax-gallery"
+            data-parallax-mode="smooth"
+            className="parallax-gallery grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-12 lg:gap-7"
+          >
             {/* Первые 4 Полароида: верхние 2 ряда Bento-сетки */}
             {topRowPhotos.map((photo) => (
               <PolaroidCard
@@ -338,6 +548,7 @@ export default function App() {
                 isFlipped={flippedPhotoId === photo.id}
                 onToggleFlip={handleToggleFlip}
                 onOpenLightbox={handleOpenLightbox}
+                onRegisterParallax={registerParallaxCard}
                 className={getBentoSpanClasses(photo)}
               />
             ))}
@@ -355,6 +566,7 @@ export default function App() {
                 isFlipped={flippedPhotoId === photo.id}
                 onToggleFlip={handleToggleFlip}
                 onOpenLightbox={handleOpenLightbox}
+                onRegisterParallax={registerParallaxCard}
                 className={
                   photo.id === 'meadow-picnic'
                     ? 'sm:col-span-1 lg:col-span-4 min-h-[320px] lg:min-h-[340px]'

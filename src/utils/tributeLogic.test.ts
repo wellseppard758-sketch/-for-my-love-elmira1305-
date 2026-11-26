@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import {
   AMBIENT_CHORD_PROGRESSION,
   calculateParallaxOffsets,
+  createInitialThrottleState,
   createLoveBurstParticles,
   createSeededRandom,
+  evaluateScrollBurst,
   formatComplimentCounter,
   getAdjacentPhotoIndex,
   getAmbientTiltConfig,
   getNextComplimentIndex,
   resolveAssetPath,
+  shouldRunParallaxFrame,
   stepLoveParticles,
   toggleFlippedPhotoId,
 } from './tributeLogic';
@@ -151,4 +154,31 @@ test('getAmbientTiltConfig produces concrete Safari-safe variant and staggered o
     `${a.variant}:${a.durationSec}:${a.delaySec}`,
     `${b.variant}:${b.durationSec}:${b.delaySec}`,
   );
+});
+
+test('evaluateScrollBurst switches to throttled on high scroll frequency and static on critical jank', () => {
+  let state = createInitialThrottleState();
+  assert.equal(state.mode, 'smooth');
+  assert.equal(shouldRunParallaxFrame(0, 16, state.mode), true);
+
+  // Высокая частота scroll-событий (25 событий за 200ms) -> переход в throttled fallback
+  for (let i = 0; i < 25; i += 1) {
+    state = evaluateScrollBurst(state, 100 + i * 8, 8);
+  }
+  assert.equal(state.mode, 'throttled');
+  assert.equal(shouldRunParallaxFrame(100, 120, state.mode), false);
+  assert.equal(shouldRunParallaxFrame(100, 170, state.mode), true);
+
+  // После паузы и спокойного кадра throttled плавно возвращается в smooth
+  state = evaluateScrollBurst(state, 500, 6, false);
+  assert.equal(state.mode, 'smooth');
+
+  // Критические задержки кадров (>55ms подряд 3 раза) с промежуточными scroll-событиями -> static fallback
+  state = evaluateScrollBurst(state, 600, 62, false);
+  state = evaluateScrollBurst(state, 610);
+  state = evaluateScrollBurst(state, 670, 68, false);
+  state = evaluateScrollBurst(state, 680);
+  state = evaluateScrollBurst(state, 740, 70, false);
+  assert.equal(state.mode, 'static');
+  assert.equal(shouldRunParallaxFrame(0, 1000, state.mode), false);
 });
