@@ -266,7 +266,7 @@ export default function App() {
           </h1>
 
           <p className="mt-5 mx-auto max-w-xl text-base sm:text-lg leading-relaxed text-[#6A5D57] text-balance">
-            Самой лучшей, нежной и заботливой маме нашего сына
+            Самой лучшей, нежной и заботливой маме наших детей
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3">
