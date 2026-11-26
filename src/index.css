@@ -152,132 +152,137 @@
   animation: heart-tap-pop 340ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Современные плавно улетающие сердечки (строго GPU transform + opacity, 100% работают на iPhone и Android) */
-.floating-heart-node {
+/* Шелковисто-плавные всплывающие сердечки: разделённые GPU-слои без промежуточных рывков и без CPU-фильтров */
+.floating-heart-rise {
   position: fixed;
   display: block;
   pointer-events: none;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   will-change: transform, opacity;
-  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
-  animation-fill-mode: forwards;
+  animation-name: floating-heart-climb, floating-heart-fade;
+  animation-timing-function: cubic-bezier(0.18, 0.66, 0.36, 1), linear;
+  animation-fill-mode: forwards, forwards;
 }
 
-@keyframes floating-heart-rise-a {
+.floating-heart-rise-tall {
+  animation-name: floating-heart-climb-tall, floating-heart-fade;
+}
+
+.floating-heart-sway {
+  display: block;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.floating-heart-pop {
+  display: block;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
+  animation: floating-heart-bloom 360ms cubic-bezier(0.22, 1.28, 0.36, 1) forwards;
+}
+
+@keyframes floating-heart-climb {
+  0% {
+    transform: translate3d(0px, 4px, 0);
+  }
+  100% {
+    transform: translate3d(0px, -370px, 0);
+  }
+}
+
+@keyframes floating-heart-climb-tall {
+  0% {
+    transform: translate3d(0px, 4px, 0);
+  }
+  100% {
+    transform: translate3d(0px, -430px, 0);
+  }
+}
+
+@keyframes floating-heart-fade {
   0% {
     opacity: 0;
-    transform: translate3d(0px, 6px, 0) scale(0.28) rotate(-8deg);
   }
-  12% {
+  10% {
     opacity: 1;
-    transform: translate3d(-10px, -28px, 0) scale(1.14) rotate(-10deg);
   }
-  28% {
-    opacity: 1;
-    transform: translate3d(-22px, -96px, 0) scale(1) rotate(-6deg);
-  }
-  58% {
-    opacity: 0.94;
-    transform: translate3d(18px, -220px, 0) scale(0.96) rotate(9deg);
-  }
-  82% {
-    opacity: 0.48;
-    transform: translate3d(-8px, -315px, 0) scale(0.86) rotate(-5deg);
+  66% {
+    opacity: 0.96;
   }
   100% {
     opacity: 0;
-    transform: translate3d(10px, -385px, 0) scale(0.76) rotate(6deg);
   }
 }
 
-@keyframes floating-heart-rise-b {
+@keyframes floating-heart-bloom {
   0% {
-    opacity: 0;
-    transform: translate3d(0px, 6px, 0) scale(0.28) rotate(8deg);
-  }
-  12% {
-    opacity: 1;
-    transform: translate3d(12px, -30px, 0) scale(1.16) rotate(11deg);
-  }
-  30% {
-    opacity: 1;
-    transform: translate3d(26px, -108px, 0) scale(1) rotate(7deg);
-  }
-  60% {
-    opacity: 0.92;
-    transform: translate3d(-16px, -238px, 0) scale(0.95) rotate(-10deg);
-  }
-  84% {
-    opacity: 0.44;
-    transform: translate3d(12px, -332px, 0) scale(0.84) rotate(6deg);
+    transform: scale(0.3);
   }
   100% {
-    opacity: 0;
-    transform: translate3d(-6px, -405px, 0) scale(0.74) rotate(-5deg);
+    transform: scale(1);
   }
 }
 
-@keyframes floating-heart-rise-c {
+@keyframes floating-heart-sway-a {
   0% {
-    opacity: 0;
-    transform: translate3d(0px, 8px, 0) scale(0.3) rotate(-5deg);
-  }
-  14% {
-    opacity: 1;
-    transform: translate3d(-18px, -36px, 0) scale(1.12) rotate(-12deg);
-  }
-  42% {
-    opacity: 0.98;
-    transform: translate3d(8px, -152px, 0) scale(1) rotate(6deg);
-  }
-  72% {
-    opacity: 0.72;
-    transform: translate3d(-24px, -276px, 0) scale(0.9) rotate(-9deg);
+    transform: translate3d(-18px, 0px, 0) rotate(-8deg);
   }
   100% {
-    opacity: 0;
-    transform: translate3d(-10px, -370px, 0) scale(0.75) rotate(4deg);
+    transform: translate3d(18px, 0px, 0) rotate(8deg);
   }
 }
 
-@keyframes floating-heart-rise-d {
+@keyframes floating-heart-sway-b {
   0% {
-    opacity: 0;
-    transform: translate3d(0px, 8px, 0) scale(0.3) rotate(5deg);
-  }
-  14% {
-    opacity: 1;
-    transform: translate3d(16px, -34px, 0) scale(1.15) rotate(12deg);
-  }
-  44% {
-    opacity: 0.98;
-    transform: translate3d(-10px, -164px, 0) scale(0.98) rotate(-7deg);
-  }
-  74% {
-    opacity: 0.68;
-    transform: translate3d(24px, -290px, 0) scale(0.88) rotate(10deg);
+    transform: translate3d(22px, 0px, 0) rotate(9deg);
   }
   100% {
-    opacity: 0;
-    transform: translate3d(14px, -395px, 0) scale(0.74) rotate(-4deg);
+    transform: translate3d(-20px, 0px, 0) rotate(-9deg);
   }
 }
 
-.floating-heart-path-a {
-  animation-name: floating-heart-rise-a;
+@keyframes floating-heart-sway-c {
+  0% {
+    transform: translate3d(-26px, 0px, 0) rotate(-10deg);
+  }
+  100% {
+    transform: translate3d(14px, 0px, 0) rotate(6deg);
+  }
 }
 
-.floating-heart-path-b {
-  animation-name: floating-heart-rise-b;
+@keyframes floating-heart-sway-d {
+  0% {
+    transform: translate3d(14px, 0px, 0) rotate(6deg);
+  }
+  100% {
+    transform: translate3d(-26px, 0px, 0) rotate(-10deg);
+  }
 }
 
-.floating-heart-path-c {
-  animation-name: floating-heart-rise-c;
+.floating-heart-sway-a {
+  animation-name: floating-heart-sway-a;
 }
 
-.floating-heart-path-d {
-  animation-name: floating-heart-rise-d;
+.floating-heart-sway-b {
+  animation-name: floating-heart-sway-b;
+}
+
+.floating-heart-sway-c {
+  animation-name: floating-heart-sway-c;
+}
+
+.floating-heart-sway-d {
+  animation-name: floating-heart-sway-d;
 }
 
 /* Композитный скролл-параллакс: строго CSS transform без конфликтов с touch-жестами */
