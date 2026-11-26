@@ -14,6 +14,8 @@ export interface PhotoMemory {
   tiltDegrees: number;
   tapeColor: WashiTapeColor;
   tapeCorner: 'top-left' | 'top-right' | 'top-center';
+  parallaxDepth?: number;
+  parallaxSpeed?: number;
 }
 
 export interface ComplimentItem {

@@ -133,6 +133,17 @@
   animation: fade-rise-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Композитный скролл-параллакс для фотографий в Bento-сетке */
+.parallax-card-layer {
+  transform: translate3d(0, var(--parallax-card-y, 0px), 0);
+  will-change: transform;
+}
+
+.parallax-img-layer {
+  transform: translate3d(0, var(--parallax-img-y, 0px), 0) scale(1.16);
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -140,5 +151,13 @@
   .animate-gentle-pulse,
   .animate-fade-rise {
     animation: none;
+  }
+  .parallax-card-layer {
+    transform: none;
+    will-change: auto;
+  }
+  .parallax-img-layer {
+    transform: none;
+    will-change: auto;
   }
 }

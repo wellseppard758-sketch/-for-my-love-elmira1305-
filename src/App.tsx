@@ -33,6 +33,8 @@ export const photosData: PhotoMemory[] = [
     tiltDegrees: -1,
     tapeColor: 'rose',
     tapeCorner: 'top-center',
+    parallaxDepth: 30,
+    parallaxSpeed: -7,
   },
   {
     id: 'park-walk',
@@ -48,6 +50,8 @@ export const photosData: PhotoMemory[] = [
     tiltDegrees: 1,
     tapeColor: 'sage',
     tapeCorner: 'top-right',
+    parallaxDepth: 22,
+    parallaxSpeed: 6,
   },
   {
     id: 'reading-stories',
@@ -63,6 +67,8 @@ export const photosData: PhotoMemory[] = [
     tiltDegrees: -1,
     tapeColor: 'cream',
     tapeCorner: 'top-left',
+    parallaxDepth: 34,
+    parallaxSpeed: -8,
   },
   {
     id: 'sunday-breakfast',
@@ -78,6 +84,8 @@ export const photosData: PhotoMemory[] = [
     tiltDegrees: 1,
     tapeColor: 'rose',
     tapeCorner: 'top-left',
+    parallaxDepth: 24,
+    parallaxSpeed: 5,
   },
   {
     id: 'meadow-picnic',
@@ -93,6 +101,8 @@ export const photosData: PhotoMemory[] = [
     tiltDegrees: -1,
     tapeColor: 'sage',
     tapeCorner: 'top-center',
+    parallaxDepth: 26,
+    parallaxSpeed: -6,
   },
   {
     id: 'tiny-hands',
@@ -108,6 +118,8 @@ export const photosData: PhotoMemory[] = [
     tiltDegrees: 1,
     tapeColor: 'cream',
     tapeCorner: 'top-right',
+    parallaxDepth: 20,
+    parallaxSpeed: 7,
   },
 ];
 

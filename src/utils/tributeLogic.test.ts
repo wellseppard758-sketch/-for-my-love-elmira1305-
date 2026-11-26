@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   AMBIENT_CHORD_PROGRESSION,
+  calculateParallaxOffsets,
   createLoveBurstParticles,
   createSeededRandom,
   formatComplimentCounter,
@@ -99,4 +100,40 @@ test('resolveAssetPath prefixes local and public paths with GitHub Pages base UR
     resolveAssetPath('https://example.com/photo.jpg', base),
     'https://example.com/photo.jpg',
   );
+});
+
+test('calculateParallaxOffsets centers at 0 and stays within safe image bleed and card bounds', () => {
+  const centered = calculateParallaxOffsets({
+    rectTop: 250,
+    rectHeight: 400,
+    viewportHeight: 900,
+    innerIntensity: 26,
+    cardSpeed: 8,
+  });
+  assert.equal(centered.progress, 0);
+  assert.equal(centered.innerImageY, 0);
+  assert.equal(centered.cardFloatY, 0);
+
+  // Карточка внизу экрана смещает фото и карточку в противоположных направлениях
+  const nearBottom = calculateParallaxOffsets({
+    rectTop: 800,
+    rectHeight: 400,
+    viewportHeight: 900,
+    innerIntensity: 26,
+    cardSpeed: 8,
+  });
+  assert.ok(nearBottom.progress > 0);
+  assert.ok(nearBottom.innerImageY < 0);
+  assert.ok(nearBottom.cardFloatY > 0);
+
+  // Компактная карточка (200px) никогда не превышает 6.8% запаса обрезки (13.6px)
+  const compactExtreme = calculateParallaxOffsets({
+    rectTop: 1500,
+    rectHeight: 200,
+    viewportHeight: 900,
+    innerIntensity: 40,
+    cardSpeed: 20,
+  });
+  assert.ok(Math.abs(compactExtreme.innerImageY) <= 13.6);
+  assert.ok(Math.abs(compactExtreme.cardFloatY) <= 9);
 });

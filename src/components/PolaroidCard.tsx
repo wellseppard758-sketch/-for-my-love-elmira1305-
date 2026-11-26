@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Expand, Heart, RotateCcw } from 'lucide-react';
 import type { PhotoMemory } from '../types/tribute';
 import { resolveAssetPath } from '../utils/tributeLogic';
+import { useCardParallax } from '../hooks/useCardParallax';
 
 interface PolaroidCardProps {
   photo: PhotoMemory;
@@ -31,7 +32,17 @@ export function PolaroidCard({
   className = '',
 }: PolaroidCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
+  const cardRef = useRef<HTMLElement | null>(null);
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const resolvedSrc = resolveAssetPath(photo.src, import.meta.env.BASE_URL);
+
+  useCardParallax({
+    cardRef,
+    frameRef,
+    innerIntensity: photo.parallaxDepth ?? 24,
+    cardSpeed: photo.parallaxSpeed ?? 0,
+    disabled: isFlipped,
+  });
 
   const hoverTiltClass =
     photo.tiltDegrees >= 0
@@ -40,56 +51,64 @@ export function PolaroidCard({
 
   return (
     <article
-      className={`perspective-1200 relative group ${className}`}
+      ref={cardRef}
+      className={`relative group ${className}`}
       data-testid={`polaroid-card-${photo.id}`}
       data-flipped={isFlipped ? 'true' : 'false'}
+      data-parallax="true"
     >
-      <div
-        className={`preserve-3d relative h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-          isFlipped ? 'rotate-y-180' : hoverTiltClass
-        }`}
-      >
-        {/* Лицевая сторона Полароида */}
+      <div className="parallax-card-layer perspective-1200 h-full w-full">
         <div
-          className={`backface-hidden relative flex h-full w-full flex-col rounded-3xl bg-[#FFFDF9] p-3.5 pb-4 sm:p-4 sm:pb-5 scrapbook-shadow transition-shadow duration-300 group-hover:scrapbook-shadow-hover border border-[#2C2623]/[0.06] ${
-            isFlipped ? 'pointer-events-none' : ''
+          className={`preserve-3d relative h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            isFlipped ? 'rotate-y-180' : hoverTiltClass
           }`}
         >
-          {/* Полупрозрачная полоска декоративного скотча, приклеенная прямо к рамке */}
+          {/* Лицевая сторона Полароида */}
           <div
-            aria-hidden="true"
-            className={`washi-tape pointer-events-none absolute z-20 h-5 rounded-[2px] opacity-90 ${TAPE_COLOR_CLASS[photo.tapeColor]} ${TAPE_POSITION_CLASS[photo.tapeCorner]}`}
-          />
-
-          <button
-            type="button"
-            onClick={() => onToggleFlip(photo.id)}
-            aria-label={`Перевернуть фото «${photo.title}» и прочитать воспоминание`}
-            aria-expanded={isFlipped}
-            className="flex h-full w-full cursor-pointer flex-col text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#B56565] rounded-2xl"
+            className={`backface-hidden relative flex h-full w-full flex-col rounded-3xl bg-[#FFFDF9] p-3.5 pb-4 sm:p-4 sm:pb-5 scrapbook-shadow transition-shadow duration-300 group-hover:scrapbook-shadow-hover border border-[#2C2623]/[0.06] ${
+              isFlipped ? 'pointer-events-none' : ''
+            }`}
           >
-            <div className="relative flex-1 min-h-[200px] w-full overflow-hidden rounded-2xl bg-[#FAF0ED]">
-              {!imageFailed ? (
-                <img
-                  src={resolvedSrc}
-                  alt={photo.alt}
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                  onError={() => setImageFailed(true)}
-                  className="h-full w-full object-cover object-center transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.035]"
-                />
-              ) : (
-                <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-[#FAF0ED] via-[#F4DCD6] to-[#DCE2D8]/70 p-6 text-center">
-                  <Heart className="h-7 w-7 text-[#B56565]" aria-hidden="true" />
-                  <p className="font-serif text-base font-medium text-[#2C2623]">
-                    {photo.title}
-                  </p>
-                  <p className="text-xs text-[#6A5D57]">
-                    Здесь будет наше любимое фото
-                  </p>
-                </div>
-              )}
-            </div>
+            {/* Полупрозрачная полоска декоративного скотча, приклеенная прямо к рамке */}
+            <div
+              aria-hidden="true"
+              className={`washi-tape pointer-events-none absolute z-20 h-5 rounded-[2px] opacity-90 ${TAPE_COLOR_CLASS[photo.tapeColor]} ${TAPE_POSITION_CLASS[photo.tapeCorner]}`}
+            />
+
+            <button
+              type="button"
+              onClick={() => onToggleFlip(photo.id)}
+              aria-label={`Перевернуть фото «${photo.title}» и прочитать воспоминание`}
+              aria-expanded={isFlipped}
+              className="flex h-full w-full cursor-pointer flex-col text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#B56565] rounded-2xl"
+            >
+              <div
+                ref={frameRef}
+                className="relative flex-1 min-h-[200px] w-full overflow-hidden rounded-2xl bg-[#FAF0ED]"
+              >
+                {!imageFailed ? (
+                  <div className="parallax-img-layer h-full w-full">
+                    <img
+                      src={resolvedSrc}
+                      alt={photo.alt}
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                      onError={() => setImageFailed(true)}
+                      className="h-full w-full object-cover object-center transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-[#FAF0ED] via-[#F4DCD6] to-[#DCE2D8]/70 p-6 text-center">
+                    <Heart className="h-7 w-7 text-[#B56565]" aria-hidden="true" />
+                    <p className="font-serif text-base font-medium text-[#2C2623]">
+                      {photo.title}
+                    </p>
+                    <p className="text-xs text-[#6A5D57]">
+                      Здесь будет наше любимое фото
+                    </p>
+                  </div>
+                )}
+              </div>
 
             <div className="mt-3.5 px-1">
               <h3 className="font-handwriting text-[1.6rem] leading-[1.08] font-semibold text-[#2C2623]">
@@ -166,6 +185,7 @@ export function PolaroidCard({
             </button>
           </div>
         </div>
+      </div>
       </div>
     </article>
   );

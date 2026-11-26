@@ -69,6 +69,57 @@ export function resolveAssetPath(src: string, baseUrl = '/'): string {
   return `${normalizedBase}${cleanedSrc}`;
 }
 
+export interface ParallaxInput {
+  rectTop: number;
+  rectHeight: number;
+  viewportHeight: number;
+  innerIntensity?: number;
+  cardSpeed?: number;
+}
+
+export interface ParallaxOffsets {
+  progress: number;
+  innerImageY: number;
+  cardFloatY: number;
+}
+
+/**
+ * Рассчитывает плавное смещение параллакса для фотографии внутри рамки
+ * и лёгкий сдвиг самой карточки, гарантируя отсутствие пустых краёв и перекрытий.
+ */
+export function calculateParallaxOffsets({
+  rectTop,
+  rectHeight,
+  viewportHeight,
+  innerIntensity = 24,
+  cardSpeed = 0,
+}: ParallaxInput): ParallaxOffsets {
+  if (viewportHeight <= 0 || rectHeight <= 0) {
+    return { progress: 0, innerImageY: 0, cardFloatY: 0 };
+  }
+
+  const cardCenter = rectTop + rectHeight / 2;
+  const viewportCenter = viewportHeight / 2;
+  const travelSpan = (viewportHeight + rectHeight) / 2;
+
+  const rawProgress = (cardCenter - viewportCenter) / travelSpan;
+  const progress = Math.max(-1, Math.min(1, rawProgress));
+
+  // При scale(1.16) у изображения есть запас ~8% сверху и снизу; ограничиваем 6.8%
+  const maxSafeImageShift = Math.min(Math.abs(innerIntensity), rectHeight * 0.068);
+  const innerImageY = Number((-progress * maxSafeImageShift).toFixed(2));
+
+  // Лёгкое смещение самой карточки ограничено ±9px, чтобы карточки не касались друг друга
+  const clampedCardSpeed = Math.max(-9, Math.min(9, cardSpeed));
+  const cardFloatY = Number((progress * clampedCardSpeed).toFixed(2));
+
+  return {
+    progress: Number(progress.toFixed(4)),
+    innerImageY,
+    cardFloatY,
+  };
+}
+
 /**
  * Переключает перевёрнутую карточку Полароида.
  */
