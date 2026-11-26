@@ -1,0 +1,6 @@
+{
+  "name": "С Днём матери!",
+  "description": "Тёплая интерактивная открытка-альбом ко Дню матери для самой любимой жены и мамы нашего сына.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

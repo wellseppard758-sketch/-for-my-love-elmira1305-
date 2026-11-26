@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-handwriting: "Caveat", cursive;
+
+  --color-cream: #FDFBF7;
+  --color-peach-soft: #FAF0ED;
+  --color-dusty-rose: #F4DCD6;
+  --color-rose-deep: #B56565;
+  --color-sage: #DCE2D8;
+  --color-sage-deep: #586B58;
+  --color-charcoal: #2C2623;
+  --color-charcoal-muted: #6A5D57;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family: var(--font-sans);
+    background-color: #FDFBF7;
+    color: #2C2623;
+  }
+}
+
+/* Тонкая текстура хлопковой бумаги поверх фона */
+.paper-grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperNoise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 240px 240px;
+}
+
+/* Мягкие рассеянные тени альбома */
+.scrapbook-shadow {
+  box-shadow:
+    0 14px 36px -14px rgba(44, 38, 35, 0.11),
+    0 3px 10px -2px rgba(44, 38, 35, 0.05);
+}
+
+.scrapbook-shadow-hover {
+  box-shadow:
+    0 24px 48px -16px rgba(44, 38, 35, 0.16),
+    0 6px 16px -4px rgba(44, 38, 35, 0.07);
+}
+
+/* 3D-переворот карточек Полароид */
+.perspective-1200 {
+  perspective: 1200px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Полупрозрачный декоративный скотч (washi tape) */
+.washi-tape {
+  position: relative;
+  backdrop-filter: blur(1px);
+  box-shadow: 0 1px 3px rgba(44, 38, 35, 0.08);
+  clip-path: polygon(
+    2% 0%,
+    98% 2%,
+    100% 18%,
+    97% 42%,
+    100% 72%,
+    98% 100%,
+    1% 98%,
+    0% 74%,
+    3% 45%,
+    0% 16%
+  );
+}
+
+/* Линованная бумага для письма внутри конверта */
+.lined-letter-paper {
+  background-color: #FFFDF9;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 31px,
+    rgba(181, 101, 101, 0.12) 31px,
+    rgba(181, 101, 101, 0.12) 32px
+  );
+}
+
+/* Мягкое дыхание кнопки атмосферы при воспроизведении */
+@keyframes gentle-pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(1.24);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.24);
+    opacity: 0;
+  }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse-ring 2.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes fade-rise-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-rise {
+  animation: fade-rise-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-gentle-pulse,
+  .animate-fade-rise {
+    animation: none;
+  }
+}
