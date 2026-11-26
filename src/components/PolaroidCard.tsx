@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Expand, Heart, RotateCcw } from 'lucide-react';
 import type { PhotoMemory } from '../types/tribute';
+import { resolveAssetPath } from '../utils/tributeLogic';
 
 interface PolaroidCardProps {
   photo: PhotoMemory;
@@ -30,6 +31,7 @@ export function PolaroidCard({
   className = '',
 }: PolaroidCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
+  const resolvedSrc = resolveAssetPath(photo.src, import.meta.env.BASE_URL);
 
   const hoverTiltClass =
     photo.tiltDegrees >= 0
@@ -69,7 +71,7 @@ export function PolaroidCard({
             <div className="relative flex-1 min-h-[200px] w-full overflow-hidden rounded-2xl bg-[#FAF0ED]">
               {!imageFailed ? (
                 <img
-                  src={photo.src}
+                  src={resolvedSrc}
                   alt={photo.alt}
                   referrerPolicy="no-referrer"
                   loading="lazy"

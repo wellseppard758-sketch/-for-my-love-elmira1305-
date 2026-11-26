@@ -6,6 +6,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    base: '/-for-my-love-elmira1305-/',
     plugins: [
       react(),
       tailwindcss(),

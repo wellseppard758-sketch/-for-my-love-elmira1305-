@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Heart, X } from 'lucide-react';
 import type { PhotoMemory } from '../types/tribute';
+import { resolveAssetPath } from '../utils/tributeLogic';
 
 interface PhotoLightboxModalProps {
   photo: PhotoMemory | null;
@@ -52,6 +53,8 @@ export function PhotoLightboxModal({
     return null;
   }
 
+  const resolvedSrc = resolveAssetPath(photo.src, import.meta.env.BASE_URL);
+
   return (
     <div
       role="dialog"
@@ -78,7 +81,7 @@ export function PhotoLightboxModal({
           <div className="relative w-full overflow-hidden rounded-2xl bg-[#FFFDF9] p-2.5 scrapbook-shadow">
             {!imageError ? (
               <img
-                src={photo.src}
+                src={resolvedSrc}
                 alt={photo.alt}
                 referrerPolicy="no-referrer"
                 onError={() => setImageError(true)}

@@ -48,6 +48,28 @@ export function formatComplimentCounter(index: number, total: number): string {
 }
 
 /**
+ * Преобразует путь к фото с учётом Vite BASE_URL (например, для GitHub Pages),
+ * оставляя внешние URL и data-URI без изменений.
+ */
+export function resolveAssetPath(src: string, baseUrl = '/'): string {
+  const trimmed = src.trim();
+  if (
+    !trimmed ||
+    /^(?:https?:|data:|blob:|\/\/)/i.test(trimmed)
+  ) {
+    return trimmed;
+  }
+
+  const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  if (normalizedBase !== '/' && trimmed.startsWith(normalizedBase)) {
+    return trimmed;
+  }
+
+  const cleanedSrc = trimmed.replace(/^\/+/, '');
+  return `${normalizedBase}${cleanedSrc}`;
+}
+
+/**
  * Переключает перевёрнутую карточку Полароида.
  */
 export function toggleFlippedPhotoId(

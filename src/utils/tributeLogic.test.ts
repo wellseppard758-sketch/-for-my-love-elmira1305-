@@ -7,6 +7,7 @@ import {
   formatComplimentCounter,
   getAdjacentPhotoIndex,
   getNextComplimentIndex,
+  resolveAssetPath,
   stepLoveParticles,
   toggleFlippedPhotoId,
 } from './tributeLogic';
@@ -78,4 +79,24 @@ test('ambient chord progression contains valid audible frequencies', () => {
       assert.ok(freq >= 150 && freq <= 1000);
     }
   }
+});
+
+test('resolveAssetPath prefixes local and public paths with GitHub Pages base URL without double-prefixing', () => {
+  const base = '/-for-my-love-elmira1305-/';
+  assert.equal(
+    resolveAssetPath('/photo1.jpg', base),
+    '/-for-my-love-elmira1305-/photo1.jpg',
+  );
+  assert.equal(
+    resolveAssetPath('/src/assets/images/test.jpg', base),
+    '/-for-my-love-elmira1305-/src/assets/images/test.jpg',
+  );
+  assert.equal(
+    resolveAssetPath('/-for-my-love-elmira1305-/photo1.jpg', base),
+    '/-for-my-love-elmira1305-/photo1.jpg',
+  );
+  assert.equal(
+    resolveAssetPath('https://example.com/photo.jpg', base),
+    'https://example.com/photo.jpg',
+  );
 });
