@@ -2,17 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   AMBIENT_CHORD_PROGRESSION,
+  GENTLE_MELODY_MEASURES,
   calculateParallaxOffsets,
+  createFloatingHeart,
   createInitialThrottleState,
   createLoveBurstParticles,
   createSeededRandom,
   evaluateScrollBurst,
   formatComplimentCounter,
+  formatRussianHeartsCount,
   getAdjacentPhotoIndex,
   getAmbientTiltConfig,
   getNextComplimentIndex,
   resolveAssetPath,
   shouldRunParallaxFrame,
+  stepFloatingHearts,
   stepLoveParticles,
   toggleFlippedPhotoId,
 } from './tributeLogic';
@@ -76,14 +80,61 @@ test('stepLoveParticles advances positions and removes off-screen particles', ()
   assert.equal(current.length, 0);
 });
 
-test('ambient chord progression contains valid audible frequencies', () => {
+test('ambient chord progression and gentle lullaby measures contain valid audible frequencies', () => {
   assert.equal(AMBIENT_CHORD_PROGRESSION.length, 4);
   for (const chord of AMBIENT_CHORD_PROGRESSION) {
     assert.ok(chord.frequencies.length >= 4);
     for (const freq of chord.frequencies) {
-      assert.ok(freq >= 150 && freq <= 1000);
+      assert.ok(freq >= 100 && freq <= 1000);
     }
   }
+  assert.ok(GENTLE_MELODY_MEASURES.length >= 6);
+  for (const measure of GENTLE_MELODY_MEASURES) {
+    assert.ok(measure.durationSec >= 3.5);
+    assert.ok(measure.notes.length >= 6);
+    for (const note of measure.notes) {
+      assert.ok(note.freq >= 100 && note.freq <= 1200);
+      assert.ok(note.velocity > 0 && note.velocity <= 1);
+    }
+  }
+});
+
+test('formatRussianHeartsCount pluralizes Russian heart counts grammatically', () => {
+  assert.equal(formatRussianHeartsCount(1), '1 сердечко');
+  assert.equal(formatRussianHeartsCount(2), '2 сердечка');
+  assert.equal(formatRussianHeartsCount(4), '4 сердечка');
+  assert.equal(formatRussianHeartsCount(5), '5 сердечек');
+  assert.equal(formatRussianHeartsCount(11), '11 сердечек');
+  assert.equal(formatRussianHeartsCount(21), '21 сердечко');
+  assert.equal(formatRussianHeartsCount(23), '23 сердечка');
+});
+
+test('createFloatingHeart and stepFloatingHearts smoothly rise, pop in, sway, and fade out', () => {
+  const rng = createSeededRandom(99);
+  const heart = createFloatingHeart(420, 380, 1, rng);
+  assert.equal(heart.id, 1);
+  assert.ok(heart.vy < -100, 'heart floats upward');
+  assert.ok(heart.size >= 20 && heart.size <= 34);
+
+  let list = [heart];
+  // Регрессия: даже при сверхкоротком первом кадре (1ms) сердечко не должно исчезать
+  list = stepFloatingHearts(list, 0.001);
+  assert.equal(list.length, 1, 'heart survives sub-2ms first animation frame');
+
+  // После ~0.18с сердечко должно подняться, проявиться и раскрыться в масштабе
+  for (let i = 0; i < 6; i += 1) {
+    list = stepFloatingHearts(list, 0.03);
+  }
+  assert.equal(list.length, 1);
+  assert.ok(list[0].y < heart.y, 'heart moved upward');
+  assert.ok(list[0].opacity > 0.9, 'heart faded in');
+  assert.ok(list[0].scale > 0.9, 'heart popped in');
+
+  // После окончания времени жизни сердечко полностью растворяется и удаляется
+  for (let i = 0; i < 160; i += 1) {
+    list = stepFloatingHearts(list, 0.03);
+  }
+  assert.equal(list.length, 0);
 });
 
 test('resolveAssetPath prefixes local and public paths with GitHub Pages base URL without double-prefixing', () => {

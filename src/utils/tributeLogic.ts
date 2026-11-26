@@ -1,4 +1,8 @@
-import type { LoveParticle, ParticleKind } from '../types/tribute';
+import type {
+  FloatingHeart,
+  LoveParticle,
+  ParticleKind,
+} from '../types/tribute';
 
 export const LOVE_BURST_PALETTE = [
   '#D98686',
@@ -9,21 +13,174 @@ export const LOVE_BURST_PALETTE = [
   '#E4B3A9',
 ] as const;
 
+export const FLOATING_HEART_STYLES = [
+  { color: '#C65B64', highlightColor: '#F5B8BE' },
+  { color: '#D67079', highlightColor: '#FAD0D4' },
+  { color: '#B5555E', highlightColor: '#EEB0B6' },
+  { color: '#E0888E', highlightColor: '#FDE0E2' },
+  { color: '#CC6672', highlightColor: '#F7C2C8' },
+] as const;
+
 export interface AmbientChord {
   name: string;
   frequencies: readonly number[];
 }
 
+export interface GentleMelodyNote {
+  /** Время внутри такта в секундах */
+  offsetSec: number;
+  /** Частота ноты в Гц */
+  freq: number;
+  /** Длительность звучания в секундах */
+  durationSec: number;
+  /** Относительная мягкая громкость (0..1) */
+  velocity: number;
+  /** Голос: тёплый аккомпанемент или нежная верхняя мелодия */
+  voice: 'felt' | 'melody' | 'pad';
+}
+
+export interface GentleMelodyMeasure {
+  name: string;
+  durationSec: number;
+  notes: readonly GentleMelodyNote[];
+}
+
 /**
- * Тёплая последовательность аккордов (Cmaj9 -> Fmaj7 -> Am9 -> G6)
- * для мягкого синтезатора «Атмосфера».
+ * Тёплая гармоническая основа в F-dur (Fmaj7 -> C/E -> Dm9 -> Bbmaj7 -> Gm9 -> C9sus4)
+ * — мягкая, колыбельная и нежная интонация без резких скачков.
  */
 export const AMBIENT_CHORD_PROGRESSION: readonly AmbientChord[] = [
-  { name: 'Cmaj9', frequencies: [261.63, 329.63, 392.0, 493.88, 587.33] },
-  { name: 'Fmaj7', frequencies: [220.0, 261.63, 329.63, 349.23, 523.25] },
-  { name: 'Am9', frequencies: [220.0, 261.63, 329.63, 392.0, 493.88] },
-  { name: 'G6', frequencies: [196.0, 246.94, 293.66, 329.63, 440.0] },
+  { name: 'Fmaj7', frequencies: [174.61, 220.0, 261.63, 329.63, 349.23] },
+  { name: 'Cadd9/E', frequencies: [164.81, 261.63, 293.66, 329.63, 392.0] },
+  { name: 'Dm9', frequencies: [146.83, 220.0, 261.63, 329.63, 349.23] },
+  { name: 'Bbmaj7', frequencies: [116.54, 220.0, 293.66, 349.23, 440.0] },
 ];
+
+/**
+ * 8-тактовая лирическая композиция для тёплого войлочного пианино (felt piano)
+ * и воздушного подклада — звучит мягко, спокойно и кинематографично.
+ */
+export const GENTLE_MELODY_MEASURES: readonly GentleMelodyMeasure[] = [
+  {
+    name: 'Fmaj7',
+    durationSec: 4.2,
+    notes: [
+      { offsetSec: 0.0, freq: 174.61, durationSec: 4.0, velocity: 0.48, voice: 'pad' },
+      { offsetSec: 0.02, freq: 261.63, durationSec: 3.9, velocity: 0.34, voice: 'pad' },
+      { offsetSec: 0.0, freq: 174.61, durationSec: 3.4, velocity: 0.65, voice: 'felt' },
+      { offsetSec: 0.52, freq: 261.63, durationSec: 2.9, velocity: 0.5, voice: 'felt' },
+      { offsetSec: 1.05, freq: 329.63, durationSec: 2.6, velocity: 0.46, voice: 'felt' },
+      { offsetSec: 1.58, freq: 349.23, durationSec: 2.3, velocity: 0.44, voice: 'felt' },
+      { offsetSec: 0.25, freq: 440.0, durationSec: 2.8, velocity: 0.55, voice: 'melody' },
+      { offsetSec: 2.1, freq: 523.25, durationSec: 2.2, velocity: 0.52, voice: 'melody' },
+      { offsetSec: 3.15, freq: 440.0, durationSec: 1.6, velocity: 0.44, voice: 'melody' },
+    ],
+  },
+  {
+    name: 'Cadd9/E',
+    durationSec: 4.2,
+    notes: [
+      { offsetSec: 0.0, freq: 164.81, durationSec: 4.0, velocity: 0.45, voice: 'pad' },
+      { offsetSec: 0.02, freq: 261.63, durationSec: 3.9, velocity: 0.32, voice: 'pad' },
+      { offsetSec: 0.0, freq: 164.81, durationSec: 3.3, velocity: 0.62, voice: 'felt' },
+      { offsetSec: 0.52, freq: 261.63, durationSec: 2.8, velocity: 0.48, voice: 'felt' },
+      { offsetSec: 1.05, freq: 293.66, durationSec: 2.6, velocity: 0.46, voice: 'felt' },
+      { offsetSec: 1.58, freq: 329.63, durationSec: 2.3, velocity: 0.44, voice: 'felt' },
+      { offsetSec: 0.25, freq: 392.0, durationSec: 3.0, velocity: 0.52, voice: 'melody' },
+      { offsetSec: 2.2, freq: 440.0, durationSec: 1.9, velocity: 0.46, voice: 'melody' },
+      { offsetSec: 3.2, freq: 392.0, durationSec: 1.6, velocity: 0.42, voice: 'melody' },
+    ],
+  },
+  {
+    name: 'Dm9',
+    durationSec: 4.2,
+    notes: [
+      { offsetSec: 0.0, freq: 146.83, durationSec: 4.0, velocity: 0.46, voice: 'pad' },
+      { offsetSec: 0.02, freq: 220.0, durationSec: 3.9, velocity: 0.32, voice: 'pad' },
+      { offsetSec: 0.0, freq: 146.83, durationSec: 3.5, velocity: 0.64, voice: 'felt' },
+      { offsetSec: 0.52, freq: 220.0, durationSec: 2.9, velocity: 0.48, voice: 'felt' },
+      { offsetSec: 1.05, freq: 261.63, durationSec: 2.6, velocity: 0.45, voice: 'felt' },
+      { offsetSec: 1.58, freq: 329.63, durationSec: 2.4, velocity: 0.44, voice: 'felt' },
+      { offsetSec: 0.25, freq: 349.23, durationSec: 2.7, velocity: 0.54, voice: 'melody' },
+      { offsetSec: 2.1, freq: 440.0, durationSec: 2.2, velocity: 0.5, voice: 'melody' },
+      { offsetSec: 3.15, freq: 523.25, durationSec: 1.8, velocity: 0.46, voice: 'melody' },
+    ],
+  },
+  {
+    name: 'Bbmaj7',
+    durationSec: 4.2,
+    notes: [
+      { offsetSec: 0.0, freq: 116.54, durationSec: 4.0, velocity: 0.42, voice: 'pad' },
+      { offsetSec: 0.02, freq: 220.0, durationSec: 3.9, velocity: 0.3, voice: 'pad' },
+      { offsetSec: 0.0, freq: 233.08, durationSec: 3.4, velocity: 0.6, voice: 'felt' },
+      { offsetSec: 0.52, freq: 293.66, durationSec: 2.8, velocity: 0.48, voice: 'felt' },
+      { offsetSec: 1.05, freq: 349.23, durationSec: 2.6, velocity: 0.46, voice: 'felt' },
+      { offsetSec: 1.58, freq: 440.0, durationSec: 2.3, velocity: 0.42, voice: 'felt' },
+      { offsetSec: 0.3, freq: 587.33, durationSec: 2.5, velocity: 0.5, voice: 'melody' },
+      { offsetSec: 2.15, freq: 523.25, durationSec: 2.1, velocity: 0.48, voice: 'melody' },
+      { offsetSec: 3.2, freq: 440.0, durationSec: 1.7, velocity: 0.42, voice: 'melody' },
+    ],
+  },
+  {
+    name: 'Gm9',
+    durationSec: 4.2,
+    notes: [
+      { offsetSec: 0.0, freq: 196.0, durationSec: 4.0, velocity: 0.44, voice: 'pad' },
+      { offsetSec: 0.02, freq: 293.66, durationSec: 3.9, velocity: 0.3, voice: 'pad' },
+      { offsetSec: 0.0, freq: 196.0, durationSec: 3.3, velocity: 0.6, voice: 'felt' },
+      { offsetSec: 0.52, freq: 233.08, durationSec: 2.8, velocity: 0.48, voice: 'felt' },
+      { offsetSec: 1.05, freq: 293.66, durationSec: 2.6, velocity: 0.45, voice: 'felt' },
+      { offsetSec: 1.58, freq: 349.23, durationSec: 2.3, velocity: 0.42, voice: 'felt' },
+      { offsetSec: 0.25, freq: 440.0, durationSec: 2.6, velocity: 0.5, voice: 'melody' },
+      { offsetSec: 2.1, freq: 392.0, durationSec: 2.2, velocity: 0.48, voice: 'melody' },
+      { offsetSec: 3.15, freq: 349.23, durationSec: 1.8, velocity: 0.44, voice: 'melody' },
+    ],
+  },
+  {
+    name: 'C9sus4',
+    durationSec: 4.2,
+    notes: [
+      { offsetSec: 0.0, freq: 130.81, durationSec: 4.0, velocity: 0.42, voice: 'pad' },
+      { offsetSec: 0.02, freq: 261.63, durationSec: 3.9, velocity: 0.32, voice: 'pad' },
+      { offsetSec: 0.0, freq: 261.63, durationSec: 3.4, velocity: 0.6, voice: 'felt' },
+      { offsetSec: 0.52, freq: 293.66, durationSec: 2.8, velocity: 0.46, voice: 'felt' },
+      { offsetSec: 1.05, freq: 349.23, durationSec: 2.6, velocity: 0.44, voice: 'felt' },
+      { offsetSec: 1.65, freq: 329.63, durationSec: 2.4, velocity: 0.45, voice: 'felt' },
+      { offsetSec: 0.3, freq: 392.0, durationSec: 2.6, velocity: 0.48, voice: 'melody' },
+      { offsetSec: 2.25, freq: 440.0, durationSec: 2.1, velocity: 0.46, voice: 'melody' },
+      { offsetSec: 3.3, freq: 392.0, durationSec: 1.5, velocity: 0.4, voice: 'melody' },
+    ],
+  },
+];
+
+/** Нежная пентатоника F-dur для отклика при каждом нажатии на сердечко */
+export const HEART_CHIME_SCALE = [
+  523.25, // C5
+  587.33, // D5
+  698.46, // F5
+  783.99, // G5
+  880.0,  // A5
+  1046.5, // C6
+] as const;
+
+/**
+ * Склонение слова «сердечко» в русском языке (1 сердечко, 2 сердечка, 5 сердечек).
+ */
+export function formatRussianHeartsCount(count: number): string {
+  const abs = Math.abs(Math.trunc(count));
+  const mod100 = abs % 100;
+  const mod10 = abs % 10;
+  if (mod100 >= 11 && mod100 <= 14) {
+    return `${abs} сердечек`;
+  }
+  if (mod10 === 1) {
+    return `${abs} сердечко`;
+  }
+  if (mod10 >= 2 && mod10 <= 4) {
+    return `${abs} сердечка`;
+  }
+  return `${abs} сердечек`;
+}
 
 /**
  * Переход к следующему комплименту по кругу без пропусков.
@@ -384,3 +541,114 @@ export function stepLoveParticles(
 
   return next;
 }
+
+/**
+ * Создаёт одно плавно всплывающее современное сердечко из точки клика.
+ * 1 клик = 1 сердечко; при серии нажатий каждое получает свой мягкий оттенок,
+ * амплитуду S-кривой и скорость для живого, шелковистого потока.
+ */
+export function createFloatingHeart(
+  originX: number,
+  originY: number,
+  id: number,
+  rng: () => number = Math.random,
+): FloatingHeart {
+  const palette =
+    FLOATING_HEART_STYLES[Math.floor(rng() * FLOATING_HEART_STYLES.length)];
+  const jitterX = (rng() - 0.5) * 20;
+  const startX = originX + jitterX;
+  const startY = originY + (rng() - 0.5) * 6;
+  const size = 20 + rng() * 14; // 20..34px — чёткий, современный силуэт
+
+  return {
+    id,
+    originX: startX,
+    x: startX,
+    y: startY,
+    driftX: (rng() - 0.5) * 28,
+    vy: -(108 + rng() * 58),
+    size,
+    scale: 0.25,
+    rotation: (rng() - 0.5) * 0.16,
+    swayPhase: rng() * Math.PI * 2,
+    swaySpeed: 1.9 + rng() * 1.1,
+    swayAmplitude: 18 + rng() * 24,
+    age: 0,
+    maxAge: 2.65 + rng() * 0.95,
+    opacity: 0,
+    color: palette.color,
+    highlightColor: palette.highlightColor,
+  };
+}
+
+/**
+ * Обновляет физику всплывающих сердечек: упругое появление (pop-in),
+ * плавная S-траектория, естественный наклон по движению и мягкое растворение.
+ */
+export function stepFloatingHearts(
+  hearts: readonly FloatingHeart[],
+  dtSeconds: number,
+): FloatingHeart[] {
+  const clampedDt = Math.min(Math.max(dtSeconds, 0), 0.05);
+  const next: FloatingHeart[] = [];
+
+  for (const h of hearts) {
+    const age = h.age + clampedDt;
+    if (age >= h.maxAge) {
+      continue;
+    }
+
+    const progress = age / h.maxAge;
+    // Мягкое замедление к концу полёта, чтобы сердечко невесомо «зависало» и таяло
+    const speedFactor = 1 - progress * 0.28;
+    const y = h.y + h.vy * speedFactor * clampedDt;
+
+    const swayAngle = h.swayPhase + age * h.swaySpeed;
+    // Плавно раскрываем амплитуду покачивания после вылета из кнопки
+    const swayEnvelope = Math.min(1, age / 0.45);
+    const swayOffset = Math.sin(swayAngle) * h.swayAmplitude * swayEnvelope;
+    const x = h.originX + h.driftX * age + swayOffset;
+
+    // Производная горизонтального движения задаёт естественный наклон сердечка
+    const horizontalVelocity =
+      h.driftX + Math.cos(swayAngle) * h.swayAmplitude * h.swaySpeed * swayEnvelope;
+    const rotation = Math.max(-0.34, Math.min(0.34, horizontalVelocity * 0.0028));
+
+    // Упругое современное появление (0.25 -> 1.12 -> 1.0) и лёгкое таяние в конце
+    let scale = 1;
+    if (age < 0.24) {
+      const t = age / 0.24;
+      // Плавный overshoot (back-out easing)
+      const inv = t - 1;
+      scale = 0.25 + 0.75 * (1 + 2.4 * inv * inv * inv + 1.4 * inv * inv);
+    } else if (progress > 0.72) {
+      const tail = (progress - 0.72) / 0.28;
+      scale = 1 - tail * 0.16;
+    }
+
+    // Мягкое появление и шелковистое растворение в последней трети полёта
+    let opacity = 1;
+    const isFadingOut = progress > 0.62;
+    if (age < 0.14) {
+      opacity = Math.max(0.05, age / 0.14);
+    } else if (isFadingOut) {
+      const fade = (progress - 0.62) / 0.38;
+      opacity = Math.max(0, 1 - fade * fade);
+    }
+
+    if (y > -80 && (!isFadingOut || opacity > 0.015)) {
+      next.push({
+        ...h,
+        x,
+        y,
+        scale,
+        rotation,
+        age,
+        opacity,
+      });
+    }
+  }
+
+  return next;
+}
+

@@ -41,3 +41,31 @@ export interface LoveParticle {
   opacity: number;
   color: string;
 }
+
+export interface FloatingHeart {
+  id: number;
+  originX: number;
+  x: number;
+  y: number;
+  driftX: number;
+  vy: number;
+  size: number;
+  scale: number;
+  rotation: number;
+  swayPhase: number;
+  swaySpeed: number;
+  swayAmplitude: number;
+  age: number;
+  maxAge: number;
+  opacity: number;
+  color: string;
+  highlightColor: string;
+}
+
+export interface HeartSpawnRequest {
+  id: number;
+  x: number;
+  y: number;
+  count: number;
+  staggerMs?: number;
+}

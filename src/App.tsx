@@ -1,11 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react';
 import { Heart, Sparkles } from 'lucide-react';
-import type { PhotoMemory } from './types/tribute';
+import type { HeartSpawnRequest, PhotoMemory } from './types/tribute';
 import { AmbientChimeEngine } from './utils/ambientAudio';
 import {
   calculateParallaxOffsets,
   createInitialThrottleState,
   evaluateScrollBurst,
+  formatRussianHeartsCount,
   getAdjacentPhotoIndex,
   shouldRunParallaxFrame,
   toggleFlippedPhotoId,
@@ -147,13 +155,17 @@ function getBentoSpanClasses(photo: PhotoMemory): string {
 }
 
 export default function App() {
-  const [burstCounter, setBurstCounter] = useState(0);
+  const [heartsSentCount, setHeartsSentCount] = useState(0);
+  const [heartSpawnRequest, setHeartSpawnRequest] =
+    useState<HeartSpawnRequest | null>(null);
   const [flippedPhotoId, setFlippedPhotoId] = useState<string | null>(null);
   const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
   const [isAmbientPlaying, setIsAmbientPlaying] = useState(false);
 
   const audioEngineRef = useRef<AmbientChimeEngine | null>(null);
   const galleryRef = useRef<HTMLDivElement | null>(null);
+  const heartIconRef = useRef<SVGSVGElement | null>(null);
+  const spawnSeqRef = useRef(0);
   const parallaxRegistryRef = useRef<Map<string, ParallaxCardHandle>>(
     new Map(),
   );
@@ -361,8 +373,49 @@ export default function App() {
     }
   }, [flippedPhotoId]);
 
-  const triggerLoveBurst = useCallback(() => {
-    setBurstCounter((prev) => prev + 1);
+  const handleHeartButtonClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      spawnSeqRef.current += 1;
+      const nextSeq = spawnSeqRef.current;
+
+      const iconRect = heartIconRef.current?.getBoundingClientRect();
+      const btnRect = event.currentTarget.getBoundingClientRect();
+      const hasPointerCoords = event.clientX > 0 && event.clientY > 0;
+
+      const originX = hasPointerCoords
+        ? event.clientX
+        : iconRect
+          ? iconRect.left + iconRect.width / 2
+          : btnRect.left + btnRect.width / 2;
+      const originY = hasPointerCoords
+        ? event.clientY - 12
+        : iconRect
+          ? iconRect.top + iconRect.height / 2 - 8
+          : btnRect.top;
+
+      setHeartsSentCount((prev) => prev + 1);
+      setHeartSpawnRequest({
+        id: nextSeq,
+        x: originX,
+        y: originY,
+        count: 1,
+      });
+      audioEngineRef.current?.playHeartChime(nextSeq - 1);
+    },
+    [],
+  );
+
+  const triggerEnvelopeCelebration = useCallback(() => {
+    spawnSeqRef.current += 1;
+    const width = typeof window !== 'undefined' ? window.innerWidth : 800;
+    const height = typeof window !== 'undefined' ? window.innerHeight : 700;
+    setHeartSpawnRequest({
+      id: spawnSeqRef.current,
+      x: width / 2,
+      y: height * 0.68,
+      count: 7,
+      staggerMs: 110,
+    });
     audioEngineRef.current?.playSoftSparkle();
   }, []);
 
@@ -424,8 +477,8 @@ export default function App() {
       {/* Тонкая бумажная текстура поверх всего экрана */}
       <div className="paper-grain-overlay" aria-hidden="true" />
 
-      {/* Праздничная анимация парящих сердечек и лепестков */}
-      <LoveBurstOverlay burstCounter={burstCounter} />
+      {/* Плавная современная анимация всплывающих сердечек */}
+      <LoveBurstOverlay spawnRequest={heartSpawnRequest} />
 
       {/* Верхняя навигация в 3 чистые зоны */}
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between gap-8 px-5 py-6 sm:px-8 border-b border-[#2C2623]/[0.07]">
@@ -492,11 +545,15 @@ export default function App() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3">
             <button
               type="button"
-              onClick={triggerLoveBurst}
-              className="group inline-flex min-h-[52px] cursor-pointer items-center justify-center gap-3 rounded-full bg-[#B56565] px-8 py-3.5 text-sm sm:text-base font-medium text-[#FDFBF7] shadow-[0_14px_30px_-10px_rgba(181,101,101,0.55)] transition-all duration-200 hover:bg-[#A15454] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2C2623]"
+              onClick={handleHeartButtonClick}
+              className="group inline-flex min-h-[52px] cursor-pointer select-none touch-manipulation items-center justify-center gap-3 rounded-full bg-[#B56565] px-8 py-3.5 text-sm sm:text-base font-medium text-[#FDFBF7] shadow-[0_14px_30px_-10px_rgba(181,101,101,0.55)] transition-all duration-200 hover:bg-[#A15454] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.96] whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2C2623]"
             >
               <Heart
-                className="h-5 w-5 shrink-0 fill-[#FDFBF7]/90 transition-transform duration-200 group-hover:scale-110"
+                ref={heartIconRef}
+                key={heartsSentCount}
+                className={`h-5 w-5 shrink-0 fill-[#FDFBF7]/90 transition-transform duration-200 group-hover:scale-110 ${
+                  heartsSentCount > 0 ? 'animate-heart-pop' : ''
+                }`}
                 aria-hidden="true"
               />
               <span>Нажми для порции любви</span>
@@ -507,9 +564,9 @@ export default function App() {
               data-testid="love-burst-status"
               className="min-h-[24px] font-handwriting text-xl sm:text-2xl text-[#B56565] transition-opacity duration-300"
             >
-              {burstCounter > 0
-                ? `Отправлено порций любви: ${burstCounter} — и это только начало`
-                : 'Нажми на кнопку или переверни любую фотографию ниже'}
+              {heartsSentCount > 0
+                ? `Улетело ${formatRussianHeartsCount(heartsSentCount)} — нажимай ещё!`
+                : 'Нажми один раз — улетит сердечко, много раз — целый поток любви'}
             </p>
           </div>
         </section>
@@ -581,7 +638,7 @@ export default function App() {
             {/* Нижний акцент Bento-сетки: Секретный конверт */}
             <SecretEnvelopeCard
               className="sm:col-span-2 lg:col-span-12 mt-2"
-              onEnvelopeOpen={triggerLoveBurst}
+              onEnvelopeOpen={triggerEnvelopeCelebration}
             />
           </div>
         </section>
