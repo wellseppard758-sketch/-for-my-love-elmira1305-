@@ -1,123 +1,41 @@
-import { useEffect, useRef } from 'react';
-import type { FloatingHeart, HeartSpawnRequest } from '../types/tribute';
-import {
-  createFloatingHeart,
-  stepFloatingHearts,
-} from '../utils/tributeLogic';
+import { useEffect, useRef, useState } from 'react';
+import type { HeartSpawnRequest } from '../types/tribute';
+import { FLOATING_HEART_STYLES } from '../utils/tributeLogic';
 
 interface LoveBurstOverlayProps {
   spawnRequest: HeartSpawnRequest | null;
 }
 
-/**
- * Рисует современное, объёмное, мягкое сердечко с центром в (0, 0),
- * нежным линейным градиентом, тёплым свечением и деликатным бликом.
- */
-function drawModernHeart(
-  ctx: CanvasRenderingContext2D,
-  size: number,
-  color: string,
-  highlightColor: string,
-): void {
-  const s = size / 2;
+type FloatVariant = 'a' | 'b' | 'c' | 'd';
 
-  ctx.save();
-  ctx.shadowColor = 'rgba(181, 101, 101, 0.24)';
-  ctx.shadowBlur = size * 0.45;
-  ctx.shadowOffsetY = size * 0.14;
-
-  const grad = ctx.createLinearGradient(-s, -s * 0.9, s, s);
-  grad.addColorStop(0, highlightColor);
-  grad.addColorStop(0.38, color);
-  grad.addColorStop(1, '#9E4752');
-
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.moveTo(0, -s * 0.34);
-  ctx.bezierCurveTo(
-    -s * 0.12,
-    -s * 0.96,
-    -s * 1.04,
-    -s * 0.92,
-    -s * 1.02,
-    -s * 0.16,
-  );
-  ctx.bezierCurveTo(
-    -s * 1.0,
-    s * 0.42,
-    -s * 0.34,
-    s * 0.78,
-    0,
-    s * 1.02,
-  );
-  ctx.bezierCurveTo(
-    s * 0.34,
-    s * 0.78,
-    s * 1.0,
-    s * 0.42,
-    s * 1.02,
-    -s * 0.16,
-  );
-  ctx.bezierCurveTo(
-    s * 1.04,
-    -s * 0.92,
-    s * 0.12,
-    -s * 0.96,
-    0,
-    -s * 0.34,
-  );
-  ctx.closePath();
-  ctx.fill();
-
-  // Тонкий мягкий блик на левом изгибе для современного тактильного объёма
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(255, 250, 248, 0.38)';
-  ctx.beginPath();
-  ctx.ellipse(-s * 0.44, -s * 0.32, s * 0.18, s * 0.11, -0.55, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
+interface RenderedFloatingHeart {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  durationMs: number;
+  variant: FloatVariant;
+  color: string;
+  highlightColor: string;
 }
 
+const FLOAT_VARIANTS: readonly FloatVariant[] = ['a', 'b', 'c', 'd'];
+
+/**
+ * GPU-ускоренный DOM/SVG-слой всплывающих сердечек.
+ * В отличие от fullscreen Canvas и prefers-reduced-motion-блокировок,
+ * гарантированно и плавно отображается на всех реальных телефонах (iOS Safari, Android, WebView).
+ */
 export function LoveBurstOverlay({ spawnRequest }: LoveBurstOverlayProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const heartsRef = useRef<FloatingHeart[]>([]);
-  const rafIdRef = useRef<number | null>(null);
-  const lastFrameTimeRef = useRef<number>(0);
-  const nextIdRef = useRef<number>(1);
-  const totalSpawnedRef = useRef<number>(0);
-  const staggerTimersRef = useRef<number[]>([]);
+  const [hearts, setHearts] = useState<RenderedFloatingHeart[]>([]);
+  const [totalSpawned, setTotalSpawned] = useState(0);
+  const nextIdRef = useRef(1);
+  const timersRef = useRef<number[]>([]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
-
-    const resizeCanvas = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.floor(window.innerWidth * dpr);
-      canvas.height = Math.floor(window.innerHeight * dpr);
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      if (rafIdRef.current !== null) {
-        window.cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-      staggerTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
-      staggerTimersRef.current = [];
+      timersRef.current.forEach((id) => window.clearTimeout(id));
+      timersRef.current = [];
     };
   }, []);
 
@@ -126,97 +44,113 @@ export function LoveBurstOverlay({ spawnRequest }: LoveBurstOverlayProps) {
       return;
     }
 
-    const prefersReducedMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-      return;
-    }
+    const spawnOne = (baseX: number, baseY: number) => {
+      const id = nextIdRef.current;
+      nextIdRef.current += 1;
 
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
+      const palette =
+        FLOATING_HEART_STYLES[(id - 1) % FLOATING_HEART_STYLES.length];
+      const variant = FLOAT_VARIANTS[(id - 1) % FLOAT_VARIANTS.length];
+      const jitterX = (Math.random() - 0.5) * 26;
+      const size = Math.round(24 + Math.random() * 14); // 24..38px — чётко видно на экране телефона
+      const durationMs = Math.round(2200 + Math.random() * 750);
 
-    const startLoopIfNeeded = () => {
-      if (rafIdRef.current !== null) {
-        return;
-      }
+      const safeWidth =
+        typeof window !== 'undefined' ? window.innerWidth : 400;
+      const clampedX = Math.max(24, Math.min(safeWidth - 24, baseX + jitterX));
+      const clampedY = Math.max(40, baseY);
 
-      lastFrameTimeRef.current = performance.now();
-
-      const tick = (now: number) => {
-        const dt = (now - lastFrameTimeRef.current) / 1000;
-        lastFrameTimeRef.current = now;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          rafIdRef.current = null;
-          return;
-        }
-
-        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
-        heartsRef.current = stepFloatingHearts(heartsRef.current, dt);
-        canvas.dataset.activeHearts = String(heartsRef.current.length);
-
-        for (const h of heartsRef.current) {
-          ctx.save();
-          ctx.translate(h.x, h.y);
-          ctx.rotate(h.rotation);
-          ctx.scale(h.scale, h.scale);
-          ctx.globalAlpha = h.opacity;
-          drawModernHeart(ctx, h.size, h.color, h.highlightColor);
-          ctx.restore();
-        }
-
-        if (heartsRef.current.length > 0) {
-          rafIdRef.current = window.requestAnimationFrame(tick);
-        } else {
-          ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-          canvas.dataset.activeHearts = '0';
-          rafIdRef.current = null;
-        }
+      const newHeart: RenderedFloatingHeart = {
+        id,
+        x: clampedX,
+        y: clampedY,
+        size,
+        durationMs,
+        variant,
+        color: palette.color,
+        highlightColor: palette.highlightColor,
       };
 
-      rafIdRef.current = window.requestAnimationFrame(tick);
-    };
+      setTotalSpawned((prev) => prev + 1);
+      // Максимум 48 одновременных сердечек — идеально плавно даже при сверхбыстрых нажатиях на телефоне
+      setHearts((prev) => [...prev, newHeart].slice(-48));
 
-    const spawnSingleHeart = (x: number, y: number) => {
-      const heart = createFloatingHeart(x, y, nextIdRef.current);
-      nextIdRef.current += 1;
-      totalSpawnedRef.current += 1;
-      // Максимум 90 одновременных сердечек — идеально плавно даже при сверхбыстрых нажатиях
-      heartsRef.current = [...heartsRef.current, heart].slice(-90);
-      canvas.dataset.totalSpawned = String(totalSpawnedRef.current);
-      canvas.dataset.activeHearts = String(heartsRef.current.length);
-      startLoopIfNeeded();
+      const cleanupId = window.setTimeout(() => {
+        setHearts((prev) => prev.filter((item) => item.id !== id));
+      }, durationMs + 120);
+      timersRef.current.push(cleanupId);
     };
 
     const { x, y, count, staggerMs = 95 } = spawnRequest;
 
     if (count === 1) {
-      spawnSingleHeart(x, y);
+      spawnOne(x, y);
       return;
     }
 
     for (let i = 0; i < count; i += 1) {
-      const spreadX = x + (Math.random() - 0.5) * 140;
+      const spreadX = x + (Math.random() - 0.5) * 120;
       const timerId = window.setTimeout(() => {
-        spawnSingleHeart(spreadX, y);
+        spawnOne(spreadX, y);
       }, i * staggerMs);
-      staggerTimersRef.current.push(timerId);
+      timersRef.current.push(timerId);
     }
   }, [spawnRequest]);
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
       data-testid="love-burst-canvas"
-      data-active-hearts="0"
-      data-total-spawned="0"
+      data-active-hearts={hearts.length}
+      data-total-spawned={totalSpawned}
       aria-hidden="true"
-      className="fixed inset-0 z-50 pointer-events-none"
-    />
+      className="fixed inset-0 z-50 pointer-events-none overflow-hidden"
+    >
+      {hearts.map((h) => {
+        const gradId = `heart-grad-${h.id}`;
+        return (
+          <span
+            key={h.id}
+            data-testid="floating-heart-item"
+            className={`floating-heart-node floating-heart-path-${h.variant}`}
+            style={{
+              left: `${h.x}px`,
+              top: `${h.y}px`,
+              width: `${h.size}px`,
+              height: `${h.size}px`,
+              marginLeft: `${-h.size / 2}px`,
+              marginTop: `${-h.size / 2}px`,
+              animationDuration: `${h.durationMs}ms`,
+            }}
+          >
+            <svg
+              viewBox="0 0 36 36"
+              width={h.size}
+              height={h.size}
+              className="block h-full w-full overflow-visible drop-shadow-[0_6px_10px_rgba(181,101,101,0.34)]"
+            >
+              <defs>
+                <linearGradient id={gradId} x1="15%" y1="10%" x2="85%" y2="95%">
+                  <stop offset="0%" stopColor={h.highlightColor} />
+                  <stop offset="42%" stopColor={h.color} />
+                  <stop offset="100%" stopColor="#9B4450" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M18 31.2C18 31.2 4.5 22.8 4.5 13.1C4.5 8.2 8.2 4.8 12.6 4.8C15.3 4.8 17.1 6.3 18 8C18.9 6.3 20.7 4.8 23.4 4.8C27.8 4.8 31.5 8.2 31.5 13.1C31.5 22.8 18 31.2 18 31.2Z"
+                fill={`url(#${gradId})`}
+              />
+              <ellipse
+                cx="12.2"
+                cy="11.8"
+                rx="2.7"
+                ry="1.6"
+                transform="rotate(-32 12.2 11.8)"
+                fill="rgba(255, 250, 248, 0.42)"
+              />
+            </svg>
+          </span>
+        );
+      })}
+    </div>
   );
 }

@@ -1,289 +1,81 @@
 import {
-  GENTLE_MELODY_MEASURES,
-  HEART_CHIME_SCALE,
-  type GentleMelodyNote,
-} from './tributeLogic';
+  encodeStereoWav,
+  renderGentleWaltzSamples,
+  renderHeartChimeWav,
+} from './waltzSynth';
 
-type WindowWithWebkitAudio = Window & {
-  webkitAudioContext?: typeof AudioContext;
-};
+/** Пентатоника G-dur в тон новому вальсу для нежного отклика при нажатии на сердечко */
+const WALTZ_CHIME_NOTES = [
+  587.33, // D5
+  659.25, // E5
+  783.99, // G5
+  880.0,  // A5
+  987.77, // B5
+  1174.66, // D6
+] as const;
 
 /**
- * Нежный акустический синтезатор на Web Audio API (без внешних файлов):
- * мягкое войлочное пианино (felt piano), деликатная верхняя мелодия,
- * тёплый воздушный подклад и естественная реверберация зала.
+ * Аудиодвижок нежной фоновой мелодии на базе нативного HTMLAudioElement + WAV Blob.
+ * Работает надёжно на iPhone (включая режим беззвучного переключателя), Android и ПК,
+ * без внешних файлов и с ощутимой, тёплой громкостью на мобильных динамиках.
  */
 export class AmbientChimeEngine {
-  private ctx: AudioContext | null = null;
-  private masterGain: GainNode | null = null;
-  private dryBus: GainNode | null = null;
-  private wetBus: GainNode | null = null;
-  private timerId: number | null = null;
-  private measureIndex = 0;
+  private audioEl: HTMLAudioElement | null = null;
+  private audioUrl: string | null = null;
+  private chimeUrls: string[] = [];
+  private fadeTimerId: number | null = null;
   private isPlaying = false;
+  private readonly targetVolume = 0.88;
 
-  /**
-   * Генерирует мягкий стерео-импульс тёплой комнаты (~2.4с)
-   * для естественного, воздушного послезвучия без резких электронных хвостов.
-   */
-  private createWarmReverbBuffer(ctx: AudioContext): AudioBuffer {
-    const durationSec = 2.4;
-    const length = Math.floor(ctx.sampleRate * durationSec);
-    const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
-
-    for (let channel = 0; channel < 2; channel += 1) {
-      const data = buffer.getChannelData(channel);
-      let lpState = 0;
-      for (let i = 0; i < length; i += 1) {
-        const t = i / length;
-        // Плавное затухание + мягкая фильтрация высоких частот (эффект тёплого дерева/войлока)
-        const envelope = Math.pow(1 - t, 2.75);
-        const white = Math.random() * 2 - 1;
-        lpState = lpState * 0.78 + white * 0.22;
-        data[i] = lpState * envelope * 0.45;
-      }
-    }
-
-    return buffer;
-  }
-
-  private ensureContext(): AudioContext | null {
-    if (typeof window === 'undefined') {
+  private ensureAudio(): HTMLAudioElement | null {
+    if (typeof window === 'undefined' || typeof Audio === 'undefined') {
       return null;
     }
 
-    if (!this.ctx) {
-      const AudioCtor =
-        window.AudioContext ||
-        (window as WindowWithWebkitAudio).webkitAudioContext;
-      if (!AudioCtor) {
-        return null;
-      }
-
-      const ctx = new AudioCtor();
-      const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-
-      // Мягкий компрессор/лимитер защищает от перегруза при наложении нот и быстрых кликах
-      const limiter = ctx.createDynamicsCompressor();
-      limiter.threshold.setValueAtTime(-16, ctx.currentTime);
-      limiter.knee.setValueAtTime(24, ctx.currentTime);
-      limiter.ratio.setValueAtTime(3.5, ctx.currentTime);
-      limiter.attack.setValueAtTime(0.015, ctx.currentTime);
-      limiter.release.setValueAtTime(0.25, ctx.currentTime);
-
-      // Общий тёплый фильтр, убирающий резкий «цифровой» верх
-      const warmthFilter = ctx.createBiquadFilter();
-      warmthFilter.type = 'lowpass';
-      warmthFilter.frequency.setValueAtTime(2800, ctx.currentTime);
-      warmthFilter.Q.setValueAtTime(0.5, ctx.currentTime);
-
-      const dryBus = ctx.createGain();
-      dryBus.gain.setValueAtTime(0.72, ctx.currentTime);
-
-      const wetBus = ctx.createGain();
-      wetBus.gain.setValueAtTime(0.42, ctx.currentTime);
-
-      const convolver = ctx.createConvolver();
-      convolver.buffer = this.createWarmReverbBuffer(ctx);
-
-      dryBus.connect(warmthFilter);
-      wetBus.connect(convolver);
-      convolver.connect(warmthFilter);
-      warmthFilter.connect(limiter);
-      limiter.connect(masterGain);
-      masterGain.connect(ctx.destination);
-
-      this.ctx = ctx;
-      this.masterGain = masterGain;
-      this.dryBus = dryBus;
-      this.wetBus = wetBus;
-    }
-
-    if (this.ctx.state === 'suspended') {
-      void this.ctx.resume().catch(() => {
-        // Игнорируем ограничения автовоспроизведения до следующего клика
+    if (!this.audioEl) {
+      const { left, right } = renderGentleWaltzSamples(24000);
+      const wavBytes = encodeStereoWav(left, right, 24000);
+      const blob = new Blob([wavBytes.buffer as ArrayBuffer], {
+        type: 'audio/wav',
       });
+      this.audioUrl = URL.createObjectURL(blob);
+
+      const audio = new Audio(this.audioUrl);
+      audio.loop = true;
+      audio.preload = 'auto';
+      audio.volume = this.targetVolume;
+      // Атрибут playsinline для корректного воспроизведения в iOS Safari
+      audio.setAttribute('playsinline', '');
+      this.audioEl = audio;
     }
 
-    return this.ctx;
+    return this.audioEl;
   }
 
-  /**
-   * Синтез мягкой клавиши «войлочного» пианино (felt piano):
-   * мягкая атака, естественный спад обертонов и камерная теплота.
-   */
-  private playFeltPianoNote(
-    freq: number,
-    startTime: number,
-    duration: number,
-    velocity: number,
-    isMelody: boolean,
-  ): void {
-    const ctx = this.ctx;
-    const dry = this.dryBus;
-    const wet = this.wetBus;
-    if (!ctx || !dry || !wet) {
-      return;
+  private ensureChimes(): string[] {
+    if (this.chimeUrls.length > 0 || typeof window === 'undefined') {
+      return this.chimeUrls;
     }
-
-    const osc1 = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
-    const osc3 = ctx.createOscillator();
-
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(freq, startTime);
-
-    // Тёплый 2-й обертон (октава выше, очень тихо)
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(freq * 2, startTime);
-    osc2.detune.setValueAtTime(2.5, startTime);
-
-    // Едва заметный 3-й обертон для живого тембра пианино
-    osc3.type = 'triangle';
-    osc3.frequency.setValueAtTime(freq * 3, startTime);
-
-    const g1 = ctx.createGain();
-    const g2 = ctx.createGain();
-    const g3 = ctx.createGain();
-
-    g1.gain.setValueAtTime(1, startTime);
-    g2.gain.setValueAtTime(isMelody ? 0.16 : 0.11, startTime);
-    g3.gain.setValueAtTime(isMelody ? 0.035 : 0.02, startTime);
-
-    // Динамический фильтр: плавно приоткрывается на атаке и мягко закрывается при затухании
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    const peakCutoff = isMelody ? 2100 : 1250;
-    const tailCutoff = isMelody ? 620 : 420;
-    filter.frequency.setValueAtTime(peakCutoff, startTime);
-    filter.frequency.exponentialRampToValueAtTime(
-      tailCutoff,
-      startTime + duration * 0.85,
-    );
-    filter.Q.setValueAtTime(0.65, startTime);
-
-    const env = ctx.createGain();
-    const peakGain = (isMelody ? 0.105 : 0.09) * velocity;
-    const attack = isMelody ? 0.032 : 0.045;
-
-    env.gain.setValueAtTime(0.0001, startTime);
-    env.gain.linearRampToValueAtTime(peakGain, startTime + attack);
-    env.gain.exponentialRampToValueAtTime(peakGain * 0.42, startTime + Math.min(0.65, duration * 0.35));
-    env.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-
-    osc1.connect(g1);
-    osc2.connect(g2);
-    osc3.connect(g3);
-    g1.connect(filter);
-    g2.connect(filter);
-    g3.connect(filter);
-    filter.connect(env);
-    env.connect(dry);
-    env.connect(wet);
-
-    osc1.start(startTime);
-    osc2.start(startTime);
-    osc3.start(startTime);
-
-    const stopAt = startTime + duration + 0.1;
-    osc1.stop(stopAt);
-    osc2.stop(stopAt);
-    osc3.stop(stopAt);
+    this.chimeUrls = WALTZ_CHIME_NOTES.map((freq) => {
+      const wavBytes = renderHeartChimeWav(freq, 24000);
+      const blob = new Blob([wavBytes.buffer as ArrayBuffer], {
+        type: 'audio/wav',
+      });
+      return URL.createObjectURL(blob);
+    });
+    return this.chimeUrls;
   }
 
-  /**
-   * Тихий дышащий воздушный подклад (pad) на двух чуть расстроенных синусах.
-   */
-  private playWarmPadNote(
-    freq: number,
-    startTime: number,
-    duration: number,
-    velocity: number,
-  ): void {
-    const ctx = this.ctx;
-    const dry = this.dryBus;
-    const wet = this.wetBus;
-    if (!ctx || !dry || !wet) {
-      return;
+  private clearFade(): void {
+    if (this.fadeTimerId !== null) {
+      window.clearInterval(this.fadeTimerId);
+      this.fadeTimerId = null;
     }
-
-    const oscA = ctx.createOscillator();
-    const oscB = ctx.createOscillator();
-    oscA.type = 'sine';
-    oscB.type = 'sine';
-    oscA.frequency.setValueAtTime(freq, startTime);
-    oscB.frequency.setValueAtTime(freq, startTime);
-    oscA.detune.setValueAtTime(-4, startTime);
-    oscB.detune.setValueAtTime(4, startTime);
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(520, startTime);
-
-    const env = ctx.createGain();
-    const peak = 0.045 * velocity;
-    env.gain.setValueAtTime(0.0001, startTime);
-    env.gain.linearRampToValueAtTime(peak, startTime + duration * 0.32);
-    env.gain.linearRampToValueAtTime(peak * 0.78, startTime + duration * 0.72);
-    env.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-
-    oscA.connect(filter);
-    oscB.connect(filter);
-    filter.connect(env);
-    env.connect(dry);
-    env.connect(wet);
-
-    oscA.start(startTime);
-    oscB.start(startTime);
-    oscA.stop(startTime + duration + 0.12);
-    oscB.stop(startTime + duration + 0.12);
-  }
-
-  private scheduleNote(note: GentleMelodyNote, measureStart: number): void {
-    const startTime = measureStart + note.offsetSec;
-    if (note.voice === 'pad') {
-      this.playWarmPadNote(note.freq, startTime, note.durationSec, note.velocity);
-      return;
-    }
-    this.playFeltPianoNote(
-      note.freq,
-      startTime,
-      note.durationSec,
-      note.velocity,
-      note.voice === 'melody',
-    );
-  }
-
-  private triggerNextMeasure(): void {
-    const ctx = this.ctx;
-    if (!ctx || !this.isPlaying) {
-      return;
-    }
-
-    const measure =
-      GENTLE_MELODY_MEASURES[
-        this.measureIndex % GENTLE_MELODY_MEASURES.length
-      ];
-    this.measureIndex =
-      (this.measureIndex + 1) % GENTLE_MELODY_MEASURES.length;
-
-    const measureStart = ctx.currentTime + 0.05;
-    for (const note of measure.notes) {
-      this.scheduleNote(note, measureStart);
-    }
-
-    if (this.timerId !== null) {
-      window.clearTimeout(this.timerId);
-    }
-    this.timerId = window.setTimeout(() => {
-      this.triggerNextMeasure();
-    }, measure.durationSec * 1000);
   }
 
   public start(): boolean {
-    const ctx = this.ensureContext();
-    if (!ctx || !this.masterGain) {
+    const audio = this.ensureAudio();
+    if (!audio) {
       return false;
     }
 
@@ -291,75 +83,121 @@ export class AmbientChimeEngine {
       return true;
     }
 
+    this.clearFade();
     this.isPlaying = true;
-    const now = ctx.currentTime;
-    this.masterGain.gain.cancelScheduledValues(now);
-    this.masterGain.gain.setValueAtTime(
-      Math.max(this.masterGain.gain.value, 0.0001),
-      now,
-    );
-    this.masterGain.gain.linearRampToValueAtTime(0.68, now + 0.75);
+    // Стартуем сразу с ощутимой громкости (iOS игнорирует программное изменение volume,
+    // но на Android/ПК сделаем плавный мягкий вход с 0.35 до 0.88)
+    try {
+      audio.volume = 0.35;
+    } catch {
+      // На iOS свойство volume может быть только для чтения
+    }
 
-    this.triggerNextMeasure();
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      void playPromise.catch(() => {
+        // Игнорируем ошибку, если браузер заблокировал воспроизведение
+      });
+    }
+
+    let step = 0;
+    const totalSteps = 10;
+    this.fadeTimerId = window.setInterval(() => {
+      step += 1;
+      const ratio = Math.min(1, step / totalSteps);
+      try {
+        audio.volume = 0.35 + (this.targetVolume - 0.35) * ratio;
+      } catch {
+        // Игнорируем ограничения iOS
+      }
+      if (ratio >= 1) {
+        this.clearFade();
+      }
+    }, 40);
+
     return true;
   }
 
   public stop(): void {
     this.isPlaying = false;
-    if (this.timerId !== null) {
-      window.clearTimeout(this.timerId);
-      this.timerId = null;
+    this.clearFade();
+
+    const audio = this.audioEl;
+    if (!audio) {
+      return;
     }
 
-    if (this.ctx && this.masterGain) {
-      const now = this.ctx.currentTime;
-      this.masterGain.gain.cancelScheduledValues(now);
-      this.masterGain.gain.setValueAtTime(
-        Math.max(this.masterGain.gain.value, 0.0001),
-        now,
-      );
-      this.masterGain.gain.linearRampToValueAtTime(0.0001, now + 0.65);
-    }
+    let step = 0;
+    const totalSteps = 8;
+    const startVol = audio.volume || this.targetVolume;
+    this.fadeTimerId = window.setInterval(() => {
+      step += 1;
+      const ratio = Math.min(1, step / totalSteps);
+      try {
+        audio.volume = Math.max(0, startVol * (1 - ratio));
+      } catch {
+        // Игнорируем ограничения iOS
+      }
+      if (ratio >= 1) {
+        this.clearFade();
+        audio.pause();
+        try {
+          audio.volume = this.targetVolume;
+        } catch {
+          // Игнорируем ограничения iOS
+        }
+      }
+    }, 35);
   }
 
   /**
-   * Деликатная одиночная нотка в тональности F-dur при нажатии на сердечко
-   * (звучит только если включена «Атмосфера»).
+   * Деликатная кристальная нотка при нажатии на сердечко (если включена «Атмосфера»).
    */
   public playHeartChime(step = 0): void {
-    if (!this.isPlaying) {
+    if (!this.isPlaying || typeof Audio === 'undefined') {
       return;
     }
-    const ctx = this.ensureContext();
-    if (!ctx) {
+    const urls = this.ensureChimes();
+    if (urls.length === 0) {
       return;
     }
-    const freq = HEART_CHIME_SCALE[Math.abs(step) % HEART_CHIME_SCALE.length];
-    this.playFeltPianoNote(freq, ctx.currentTime + 0.015, 1.35, 0.42, true);
+    const url = urls[Math.abs(step) % urls.length];
+    const chime = new Audio(url);
+    chime.setAttribute('playsinline', '');
+    try {
+      chime.volume = 0.55;
+    } catch {
+      // Игнорируем ограничения iOS
+    }
+    const p = chime.play();
+    if (p && typeof p.catch === 'function') {
+      void p.catch(() => {});
+    }
   }
 
   public playSoftSparkle(): void {
     if (!this.isPlaying) {
       return;
     }
-    const ctx = this.ensureContext();
-    if (!ctx) {
-      return;
-    }
-    const now = ctx.currentTime + 0.02;
-    [523.25, 698.46, 880.0, 1046.5].forEach((freq, idx) => {
-      this.playFeltPianoNote(freq, now + idx * 0.095, 1.65, 0.36, true);
-    });
+    this.playHeartChime(2);
+    window.setTimeout(() => this.playHeartChime(4), 120);
   }
 
   public dispose(): void {
-    this.stop();
-    if (this.ctx && this.ctx.state !== 'closed') {
-      void this.ctx.close().catch(() => {});
+    this.isPlaying = false;
+    this.clearFade();
+    if (this.audioEl) {
+      this.audioEl.pause();
+      this.audioEl.src = '';
+      this.audioEl = null;
     }
-    this.ctx = null;
-    this.masterGain = null;
-    this.dryBus = null;
-    this.wetBus = null;
+    if (this.audioUrl) {
+      URL.revokeObjectURL(this.audioUrl);
+      this.audioUrl = null;
+    }
+    for (const url of this.chimeUrls) {
+      URL.revokeObjectURL(url);
+    }
+    this.chimeUrls = [];
   }
 }

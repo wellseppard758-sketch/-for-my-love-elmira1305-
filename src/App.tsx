@@ -378,20 +378,21 @@ export default function App() {
       spawnSeqRef.current += 1;
       const nextSeq = spawnSeqRef.current;
 
-      const iconRect = heartIconRef.current?.getBoundingClientRect();
       const btnRect = event.currentTarget.getBoundingClientRect();
-      const hasPointerCoords = event.clientX > 0 && event.clientY > 0;
+      const iconRect = heartIconRef.current?.getBoundingClientRect();
 
-      const originX = hasPointerCoords
+      const pointerInsideButton =
+        event.clientX >= btnRect.left &&
+        event.clientX <= btnRect.right &&
+        event.clientY >= btnRect.top &&
+        event.clientY <= btnRect.bottom;
+
+      const originX = pointerInsideButton
         ? event.clientX
         : iconRect
           ? iconRect.left + iconRect.width / 2
           : btnRect.left + btnRect.width / 2;
-      const originY = hasPointerCoords
-        ? event.clientY - 12
-        : iconRect
-          ? iconRect.top + iconRect.height / 2 - 8
-          : btnRect.top;
+      const originY = btnRect.top + 6;
 
       setHeartsSentCount((prev) => prev + 1);
       setHeartSpawnRequest({

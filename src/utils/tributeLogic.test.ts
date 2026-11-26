@@ -233,3 +233,39 @@ test('evaluateScrollBurst switches to throttled on high scroll frequency and sta
   assert.equal(state.mode, 'static');
   assert.equal(shouldRunParallaxFrame(0, 1000, state.mode), false);
 });
+
+test('waltzSynth generates a valid, clearly audible stereo PCM WAV for mobile speakers without clipping', async () => {
+  const {
+    GENTLE_WALTZ_SCORE,
+    WALTZ_LOOP_DURATION_SEC,
+    encodeStereoWav,
+    renderGentleWaltzSamples,
+    renderHeartChimeWav,
+  } = await import('./waltzSynth');
+
+  assert.ok(GENTLE_WALTZ_SCORE.length >= 40);
+  const sampleRate = 8000; // Быстрый прогон для юнит-теста
+  const { left, right } = renderGentleWaltzSamples(sampleRate);
+  assert.equal(left.length, WALTZ_LOOP_DURATION_SEC * sampleRate);
+  assert.equal(right.length, left.length);
+
+  let peak = 0;
+  let sumSq = 0;
+  for (let i = 0; i < left.length; i += 1) {
+    assert.ok(Number.isFinite(left[i]) && Number.isFinite(right[i]));
+    peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
+    sumSq += left[i] * left[i] + right[i] * right[i];
+  }
+  const rms = Math.sqrt(sumSq / (left.length * 2));
+  assert.ok(peak >= 0.5 && peak <= 0.92, `peak=${peak} should be clearly audible and non-clipping`);
+  assert.ok(rms >= 0.08, `rms=${rms} should be loud enough for phone speakers`);
+
+  const wav = encodeStereoWav(left, right, sampleRate);
+  assert.equal(String.fromCharCode(wav[0], wav[1], wav[2], wav[3]), 'RIFF');
+  assert.equal(String.fromCharCode(wav[8], wav[9], wav[10], wav[11]), 'WAVE');
+  assert.equal(wav.byteLength, 44 + left.length * 4);
+
+  const chimeWav = renderHeartChimeWav(783.99, 8000);
+  assert.equal(String.fromCharCode(chimeWav[0], chimeWav[1], chimeWav[2], chimeWav[3]), 'RIFF');
+  assert.ok(chimeWav.byteLength > 1000);
+});
