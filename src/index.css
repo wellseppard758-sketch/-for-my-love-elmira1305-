@@ -144,6 +144,32 @@
   will-change: transform;
 }
 
+/* Автоматическое медленное покачивание (tilt) «живой» карточки Полароида */
+@keyframes polaroid-gentle-tilt {
+  0%,
+  100% {
+    transform: rotate(var(--tilt-min, -1.1deg));
+  }
+  50% {
+    transform: rotate(var(--tilt-max, 1.1deg));
+  }
+}
+
+.polaroid-ambient-tilt {
+  animation-name: polaroid-gentle-tilt;
+  animation-duration: var(--tilt-duration, 8.5s);
+  animation-delay: var(--tilt-delay, 0s);
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.polaroid-ambient-tilt-paused {
+  animation: none;
+  transform: rotate(0deg);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -157,6 +183,11 @@
     will-change: auto;
   }
   .parallax-img-layer {
+    transform: none;
+    will-change: auto;
+  }
+  .polaroid-ambient-tilt {
+    animation: none;
     transform: none;
     will-change: auto;
   }

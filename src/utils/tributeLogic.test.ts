@@ -7,6 +7,7 @@ import {
   createSeededRandom,
   formatComplimentCounter,
   getAdjacentPhotoIndex,
+  getAmbientTiltConfig,
   getNextComplimentIndex,
   resolveAssetPath,
   stepLoveParticles,
@@ -136,4 +137,18 @@ test('calculateParallaxOffsets centers at 0 and stays within safe image bleed an
   });
   assert.ok(Math.abs(compactExtreme.innerImageY) <= 13.6);
   assert.ok(Math.abs(compactExtreme.cardFloatY) <= 9);
+});
+
+test('getAmbientTiltConfig produces gentle bounded rotation and staggered organic timing per card', () => {
+  const a = getAmbientTiltConfig('morning-hug', -1);
+  const b = getAmbientTiltConfig('park-walk', 1);
+
+  assert.ok(a.minDeg < a.maxDeg);
+  assert.ok(Math.abs(a.minDeg) <= 2.25 && Math.abs(a.maxDeg) <= 2.25);
+  assert.ok(a.durationSec >= 7.5 && a.durationSec <= 11.5);
+  assert.ok(a.delaySec <= 0);
+  assert.notEqual(
+    `${a.minDeg}:${a.durationSec}:${a.delaySec}`,
+    `${b.minDeg}:${b.durationSec}:${b.delaySec}`,
+  );
 });

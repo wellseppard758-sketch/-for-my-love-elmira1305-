@@ -120,6 +120,45 @@ export function calculateParallaxOffsets({
   };
 }
 
+export interface AmbientTiltConfig {
+  minDeg: number;
+  maxDeg: number;
+  durationSec: number;
+  delaySec: number;
+}
+
+/**
+ * Генерирует детерминированные параметры медленного «живого» покачивания
+ * (tilt) для каждой карточки Полароида, чтобы они двигались органично и несинхронно.
+ */
+export function getAmbientTiltConfig(
+  id: string,
+  baseTiltDegrees = 0,
+): AmbientTiltConfig {
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+
+  // Мягкая амплитуда 0.9°..1.45° вокруг базового наклона
+  const amplitude = Number((0.9 + ((hash % 12) / 11) * 0.55).toFixed(2));
+  const clampedBase = Math.max(-0.8, Math.min(0.8, baseTiltDegrees * 0.5));
+
+  const minDeg = Number((clampedBase - amplitude).toFixed(2));
+  const maxDeg = Number((clampedBase + amplitude).toFixed(2));
+
+  // Медленный цикл 7.5s..11.0s и отрицательная задержка фазы для плавного старта без синхронности
+  const durationSec = Number((7.5 + ((hash >> 4) % 8) * 0.5).toFixed(2));
+  const delaySec = Number((-(((hash >> 8) % 10) * 0.65)).toFixed(2));
+
+  return {
+    minDeg,
+    maxDeg,
+    durationSec,
+    delaySec,
+  };
+}
+
 /**
  * Переключает перевёрнутую карточку Полароида.
  */

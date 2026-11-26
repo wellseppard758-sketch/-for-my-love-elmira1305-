@@ -1,7 +1,11 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { Expand, Heart, RotateCcw } from 'lucide-react';
 import type { PhotoMemory } from '../types/tribute';
-import { resolveAssetPath } from '../utils/tributeLogic';
+import {
+  getAmbientTiltConfig,
+  resolveAssetPath,
+} from '../utils/tributeLogic';
 import { useCardParallax } from '../hooks/useCardParallax';
 
 interface PolaroidCardProps {
@@ -35,6 +39,17 @@ export function PolaroidCard({
   const cardRef = useRef<HTMLElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const resolvedSrc = resolveAssetPath(photo.src, import.meta.env.BASE_URL);
+  const ambientTilt = useMemo(
+    () => getAmbientTiltConfig(photo.id, photo.tiltDegrees),
+    [photo.id, photo.tiltDegrees],
+  );
+
+  const ambientTiltStyle = {
+    '--tilt-min': `${ambientTilt.minDeg}deg`,
+    '--tilt-max': `${ambientTilt.maxDeg}deg`,
+    '--tilt-duration': `${ambientTilt.durationSec}s`,
+    '--tilt-delay': `${ambientTilt.delaySec}s`,
+  } as CSSProperties;
 
   useCardParallax({
     cardRef,
@@ -56,13 +71,22 @@ export function PolaroidCard({
       data-testid={`polaroid-card-${photo.id}`}
       data-flipped={isFlipped ? 'true' : 'false'}
       data-parallax="true"
+      data-ambient-tilt={isFlipped ? 'paused' : 'active'}
     >
-      <div className="parallax-card-layer perspective-1200 h-full w-full">
+      <div className="parallax-card-layer h-full w-full">
         <div
-          className={`preserve-3d relative h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            isFlipped ? 'rotate-y-180' : hoverTiltClass
+          style={ambientTiltStyle}
+          className={`perspective-1200 h-full w-full ${
+            isFlipped
+              ? 'polaroid-ambient-tilt-paused'
+              : 'polaroid-ambient-tilt group-hover:[animation-play-state:paused]'
           }`}
         >
+          <div
+            className={`preserve-3d relative h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              isFlipped ? 'rotate-y-180' : hoverTiltClass
+            }`}
+          >
           {/* Лицевая сторона Полароида */}
           <div
             className={`backface-hidden relative flex h-full w-full flex-col rounded-3xl bg-[#FFFDF9] p-3.5 pb-4 sm:p-4 sm:pb-5 scrapbook-shadow transition-shadow duration-300 group-hover:scrapbook-shadow-hover border border-[#2C2623]/[0.06] ${
@@ -185,6 +209,7 @@ export function PolaroidCard({
             </button>
           </div>
         </div>
+      </div>
       </div>
       </div>
     </article>
