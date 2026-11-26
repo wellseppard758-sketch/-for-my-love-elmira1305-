@@ -22,14 +22,17 @@ import { AmbientChimeButton } from './components/AmbientChimeButton';
 
 // ============================================================================
 // ФОТОГРАФИИ ДЛЯ СЕМЕЙНОГО АЛЬБОМА
-// Положите ваши фотографии в папку `public` (например, public/photo1.jpg)
-// и замените путь `src` у каждой карточки ниже.
+// Все снимки лежат в папке `public/photos/` под простыми именами без пробелов:
+// photo1.jpg, photo2.jpg, photo3.jpg, photo4.jpg, photo5.jpg, photo6.jpg.
+// Чтобы загрузить свои фото, просто замените файлы в `public/photos/` с теми же
+// именами (код менять не нужно). Если у вашего фото расширение .png или .webp —
+// просто обновите расширение в строке `src` ниже.
 // ============================================================================
 export const photosData: PhotoMemory[] = [
   {
     id: 'morning-hug',
-    // ЗАМЕНИТЕ НА ПУТЬ К ВАШЕМУ ФОТО, например '/photo1.jpg'
-    src: '/src/assets/images/family_morning_hug_1795721530398.jpg',
+    // Фото 1 (большая главная карточка) -> public/photos/photo1.jpg
+    src: '/photos/photo1.jpg',
     alt: 'Мама с улыбкой нежно обнимает нашего маленького сына утром в солнечной комнате',
     title: 'Самое доброе утро',
     date: 'Тёплый выходной',
@@ -45,8 +48,8 @@ export const photosData: PhotoMemory[] = [
   },
   {
     id: 'park-walk',
-    // ЗАМЕНИТЕ НА ПУТЬ К ВАШЕМУ ФОТО, например '/photo2.jpg'
-    src: '/src/assets/images/family_park_walk_1795721530937.jpg',
+    // Фото 2 (горизонтальная карточка) -> public/photos/photo2.jpg
+    src: '/photos/photo2.jpg',
     alt: 'Мама и сын идут за руку по солнечной парковой тропинке среди зелени',
     title: 'За руку в приключения',
     date: 'Золотой час',
@@ -62,8 +65,8 @@ export const photosData: PhotoMemory[] = [
   },
   {
     id: 'reading-stories',
-    // ЗАМЕНИТЕ НА ПУТЬ К ВАШЕМУ ФОТО, например '/photo3.jpg'
-    src: '/src/assets/images/family_reading_portrait_1795721532349.jpg',
+    // Фото 3 (высокая вертикальная карточка) -> public/photos/photo3.jpg
+    src: '/photos/photo3.jpg',
     alt: 'Мама читает иллюстрированную книгу вместе с сыном в уютном кресле у окна',
     title: 'Сказки у окна',
     date: 'Тихий вечер',
@@ -79,8 +82,8 @@ export const photosData: PhotoMemory[] = [
   },
   {
     id: 'sunday-breakfast',
-    // ЗАМЕНИТЕ НА ПУТЬ К ВАШЕМУ ФОТО, например '/photo4.jpg'
-    src: '/src/assets/images/family_baking_kitchen_1795721533000.jpg',
+    // Фото 4 (горизонтальная карточка) -> public/photos/photo4.jpg
+    src: '/photos/photo4.jpg',
     alt: 'Мама и сын весело готовят воскресные оладушки на кухне, перепачкавшись в муке',
     title: 'Воскресные оладушки',
     date: 'Семейная традиция',
@@ -96,8 +99,8 @@ export const photosData: PhotoMemory[] = [
   },
   {
     id: 'meadow-picnic',
-    // ЗАМЕНИТЕ НА ПУТЬ К ВАШЕМУ ФОТО, например '/photo5.jpg'
-    src: '/src/assets/images/family_meadow_picnic_1795721534009.jpg',
+    // Фото 5 (горизонтальная карточка внизу) -> public/photos/photo5.jpg
+    src: '/photos/photo5.jpg',
     alt: 'Мама смеётся и подбрасывает сына на руках на закатном лугу среди полевых цветов',
     title: 'Выше облаков',
     date: 'Тёплый закат',
@@ -113,8 +116,8 @@ export const photosData: PhotoMemory[] = [
   },
   {
     id: 'tiny-hands',
-    // ЗАМЕНИТЕ НА ПУТЬ К ВАШЕМУ ФОТО, например '/photo6.jpg'
-    src: '/src/assets/images/family_tiny_hands_1795721535994.jpg',
+    // Фото 6 (квадратная карточка внизу) -> public/photos/photo6.jpg
+    src: '/photos/photo6.jpg',
     alt: 'Нежные руки мамы бережно держат маленькую ладошку сына рядом с букетом розовых пионов',
     title: 'Маленькая ладошка',
     date: 'В самом сердце',

@@ -89,16 +89,16 @@ test('ambient chord progression contains valid audible frequencies', () => {
 test('resolveAssetPath prefixes local and public paths with GitHub Pages base URL without double-prefixing', () => {
   const base = '/-for-my-love-elmira1305-/';
   assert.equal(
+    resolveAssetPath('/photos/photo1.jpg', base),
+    '/-for-my-love-elmira1305-/photos/photo1.jpg',
+  );
+  assert.equal(
     resolveAssetPath('/photo1.jpg', base),
     '/-for-my-love-elmira1305-/photo1.jpg',
   );
   assert.equal(
-    resolveAssetPath('/src/assets/images/test.jpg', base),
-    '/-for-my-love-elmira1305-/src/assets/images/test.jpg',
-  );
-  assert.equal(
-    resolveAssetPath('/-for-my-love-elmira1305-/photo1.jpg', base),
-    '/-for-my-love-elmira1305-/photo1.jpg',
+    resolveAssetPath('/-for-my-love-elmira1305-/photos/photo1.jpg', base),
+    '/-for-my-love-elmira1305-/photos/photo1.jpg',
   );
   assert.equal(
     resolveAssetPath('https://example.com/photo.jpg', base),
