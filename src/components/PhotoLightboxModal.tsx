@@ -78,14 +78,14 @@ export function PhotoLightboxModal({
 
         {/* Фотография в уютной рамке */}
         <div className="relative flex w-full items-center justify-center bg-[#FAF0ED] p-4 sm:p-6 md:w-[58%]">
-          <div className="relative w-full overflow-hidden rounded-2xl bg-[#FFFDF9] p-2.5 scrapbook-shadow">
+          <div className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-[#FFFDF9] p-2.5 scrapbook-shadow">
             {!imageError ? (
               <img
                 src={resolvedSrc}
                 alt={photo.alt}
                 referrerPolicy="no-referrer"
                 onError={() => setImageError(true)}
-                className="max-h-[46vh] w-full rounded-xl object-cover md:max-h-[68vh]"
+                className="mx-auto max-h-[46vh] w-auto max-w-full rounded-xl object-contain md:max-h-[68vh]"
               />
             ) : (
               <div className="flex h-64 w-full flex-col items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#FAF0ED] via-[#F4DCD6] to-[#DCE2D8]">

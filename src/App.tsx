@@ -46,87 +46,92 @@ import { AmbientChimeButton } from './components/AmbientChimeButton';
 // ============================================================================
 export const photosData: PhotoMemory[] = [
   {
-    id: 'morning-hug',
+    id: 'expecting-miracle',
     // Фото 1 (большая главная карточка) -> public/photos/photo1.jpg
     src: '/photos/photo1.jpg',
-    alt: 'Мама с улыбкой нежно обнимает нашего маленького сына утром в солнечной комнате',
-    title: 'Самое доброе утро',
-    date: 'Тёплый выходной',
-    location: 'Наш дом',
+    alt: 'Мама в воздушном белом платье сияет улыбкой, бережно обнимая животик в ожидании малыша',
+    title: 'В ожидании чуда',
+    date: 'Нежное время',
+    location: 'На пороге счастья',
     memoryNote:
-      'Обожаю эти тихие утренние минуты, когда вы обнимаетесь, смеётесь вполголоса, а вся комната будто наполняется солнечным светом.',
+      'Смотрю на этот кадр — и до сих пор замирает сердце. В этом воздушном белом платье ты светилась таким тихим счастьем, будто уже тогда знала, какую огромную любовь подаришь нашему малышу.',
     span: 'featured',
     tiltDegrees: -1,
     tapeColor: 'rose',
     tapeCorner: 'top-center',
+    objectPosition: '50% 68%',
     parallaxDepth: 40,
     parallaxSpeed: -9,
   },
   {
-    id: 'park-walk',
+    id: 'curious-eyes',
     // Фото 2 (горизонтальная карточка) -> public/photos/photo2.jpg
     src: '/photos/photo2.jpg',
-    alt: 'Мама и сын идут за руку по солнечной парковой тропинке среди зелени',
-    title: 'За руку в приключения',
-    date: 'Золотой час',
-    location: 'Любимый парк',
+    alt: 'Мама с мягкой улыбкой держит на руках малыша в жёлтом леопардовом комбинезоне, который с удивлением смотрит в камеру',
+    title: 'Наш маленький львёнок',
+    date: 'Уютный день',
+    location: 'Дома вместе',
     memoryNote:
-      'Ты показываешь ему этот мир с таким терпением и интересом, что даже обычная прогулка до парка превращается для него в сказку.',
+      'Эти распахнутые глазки, сложенные крошечные ручки и твоя спокойная, тёплая улыбка рядом. В твоих объятиях нашему маленькому львёнку всегда спокойно, интересно и так хорошо.',
     span: 'wide',
     tiltDegrees: 1,
     tapeColor: 'sage',
     tapeCorner: 'top-right',
+    objectPosition: '50% 24%',
     parallaxDepth: 34,
     parallaxSpeed: 8,
   },
   {
-    id: 'reading-stories',
+    id: 'first-new-year',
     // Фото 3 (высокая вертикальная карточка) -> public/photos/photo3.jpg
     src: '/photos/photo3.jpg',
-    alt: 'Мама читает иллюстрированную книгу вместе с сыном в уютном кресле у окна',
-    title: 'Сказки у окна',
-    date: 'Тихий вечер',
-    location: 'Уютное кресло',
+    alt: 'Мама в белой пижаме с красными сердечками обнимает малыша в клетчатом комбинезоне на фоне наряженной ёлки',
+    title: 'Тёплый Новый год',
+    date: 'Зимняя сказка',
+    location: 'У ёлки',
     memoryNote:
-      'Твой спокойный голос, когда ты читаешь ему сказки — это звук абсолютного счастья и безопасности. Даже я всегда заслушиваюсь.',
+      'Пижама в сердечках, огоньки на ёлке и наш сынок, который так уютно прижался к тебе. Ты умеешь превращать обычные праздники в настоящее семейное волшебство, которое хочется помнить всю жизнь.',
     span: 'tall',
     tiltDegrees: -1,
     tapeColor: 'cream',
     tapeCorner: 'top-left',
+    objectPosition: '28% 40%',
     parallaxDepth: 42,
     parallaxSpeed: -9,
   },
   {
-    id: 'sunday-breakfast',
+    id: 'tender-kiss',
     // Фото 4 (горизонтальная карточка) -> public/photos/photo4.jpg
     src: '/photos/photo4.jpg',
-    alt: 'Мама и сын весело готовят воскресные оладушки на кухне, перепачкавшись в муке',
-    title: 'Воскресные оладушки',
-    date: 'Семейная традиция',
-    location: 'Наша кухня',
+    alt: 'Мама с закрытыми глазами нежно целует в щёчку малыша в кремовом колпачке-гномике и кофточке с коалой',
+    title: 'Самый нежный поцелуй',
+    date: 'Минута нежности',
+    location: 'Щёчка к щёчке',
     memoryNote:
-      'Мука на носу, искренний смех на всю квартиру и самые вкусные завтраки на свете. Спасибо за уют, который ты создаёшь каждый день.',
+      'Крошечный колпачок-гномик, эта смешная поднятая ладошка и твой тихий поцелуй в щёчку. В одном этом мгновении столько маминой нежности, что хватает согреть всю нашу семью.',
     span: 'wide',
     tiltDegrees: 1,
     tapeColor: 'rose',
     tapeCorner: 'top-left',
+    objectPosition: '50% 48%',
     parallaxDepth: 34,
     parallaxSpeed: 7,
   },
   {
-    id: 'meadow-picnic',
+    id: 'sunny-stroll',
     // Фото 5 (горизонтальная карточка внизу) -> public/photos/photo5.jpg
     src: '/photos/photo5.jpg',
-    alt: 'Мама смеётся и подбрасывает сына на руках на закатном лугу среди полевых цветов',
-    title: 'Выше облаков',
-    date: 'Тёплый закат',
-    location: 'Поляна цветов',
+    alt: 'Улыбающаяся мама в ярко-синей куртке и светлой шапочке стоит с коляской у солнечных колонн на прогулке',
+    title: 'Солнечная прогулка',
+    date: 'Ясный день',
+    location: 'Наш маршрут',
     memoryNote:
-      'В этом кадре — всё, за что я так сильно тебя люблю: твоя лёгкость, живой смех и то, как наш малыш светится в твоих объятиях.',
+      'Сколько тёплых километров ты прошла с этой коляской, ловя каждый лучик солнца для нашего малыша. Даже на обычной прогулке твоя улыбка ярче любого ясного дня.',
     span: 'wide',
     tiltDegrees: -1,
     tapeColor: 'sage',
     tapeCorner: 'top-center',
+    objectPosition: '50% 52%',
     parallaxDepth: 36,
     parallaxSpeed: -8,
   },
@@ -642,7 +647,7 @@ export default function App() {
               onComplimentClick={() => audioEngineRef.current?.playSoftSparkle()}
             />
 
-            {bottomRowPhotos.map((photo) => (
+            {bottomRowPhotos.map((photo, index) => (
               <PolaroidCard
                 key={photo.id}
                 photo={photo}
@@ -651,7 +656,7 @@ export default function App() {
                 onOpenLightbox={handleOpenLightbox}
                 onRegisterParallax={registerParallaxCard}
                 className={
-                  photo.id === 'meadow-picnic'
+                  index === 0
                     ? 'sm:col-span-1 lg:col-span-4 min-h-[320px] lg:min-h-[340px]'
                     : 'sm:col-span-1 lg:col-span-3 min-h-[320px] lg:min-h-[340px]'
                 }

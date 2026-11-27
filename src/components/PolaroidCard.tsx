@@ -158,6 +158,11 @@ export function PolaroidCard({
                       referrerPolicy="no-referrer"
                       loading="lazy"
                       onError={() => setImageFailed(true)}
+                      style={
+                        photo.objectPosition
+                          ? { objectPosition: photo.objectPosition }
+                          : undefined
+                      }
                       className="h-full w-full object-cover object-center transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
                     />
                   </div>

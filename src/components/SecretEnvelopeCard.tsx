@@ -94,9 +94,6 @@ export function SecretEnvelopeCard({
                   >
                     {SECRET_LETTER.signature}
                   </p>
-                  <p className="mt-2 text-xs sm:text-sm italic text-[#6A5D57]">
-                    {SECRET_LETTER.postscript}
-                  </p>
                 </div>
               </div>
             )}
