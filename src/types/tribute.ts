@@ -69,3 +69,29 @@ export interface HeartSpawnRequest {
   count: number;
   staggerMs?: number;
 }
+
+export type ConfettiShape = 'ribbon' | 'circle' | 'diamond';
+
+export type ConfettiArcVariant = 'high' | 'mid' | 'wide' | 'soft';
+
+export interface ConfettiPiece {
+  id: number;
+  x: number;
+  y: number;
+  xLane: number; // 0..9 равномерный веер влево-вправо
+  arcVariant: ConfettiArcVariant;
+  spinVariant: 'a' | 'b' | 'c';
+  shape: ConfettiShape;
+  color: string;
+  width: number;
+  height: number;
+  durationMs: number;
+  spinDurationMs: number;
+  delayMs: number;
+}
+
+export interface ConfettiBurstRequest {
+  id: number;
+  x: number;
+  y: number;
+}

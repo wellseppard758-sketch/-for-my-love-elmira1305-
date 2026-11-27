@@ -269,3 +269,29 @@ test('waltzSynth generates a valid, clearly audible stereo PCM WAV for mobile sp
   assert.equal(String.fromCharCode(chimeWav[0], chimeWav[1], chimeWav[2], chimeWav[3]), 'RIFF');
   assert.ok(chimeWav.byteLength > 1000);
 });
+
+test('createConfettiSalutePieces produces balanced two-wave festive confetti burst', async () => {
+  const { CONFETTI_SALUTE_PALETTE, createConfettiSalutePieces } = await import(
+    './tributeLogic'
+  );
+  const rng = createSeededRandom(2026);
+  const pieces = createConfettiSalutePieces(500, 420, 48, 10, false, rng);
+
+  assert.equal(pieces.length, 48);
+  const lanes = new Set(pieces.map((p) => p.xLane));
+  const shapes = new Set(pieces.map((p) => p.shape));
+  assert.ok(lanes.size >= 8, 'confetti fans symmetrically across left and right lanes');
+  assert.ok(shapes.has('ribbon') && shapes.has('circle') && shapes.has('diamond'));
+
+  const wave1 = pieces.filter((p) => p.delayMs < 100);
+  const wave2 = pieces.filter((p) => p.delayMs >= 150);
+  assert.ok(wave1.length >= 20 && wave2.length >= 10, 'two-wave celebratory salute timing');
+
+  for (const p of pieces) {
+    assert.ok(
+      (CONFETTI_SALUTE_PALETTE as readonly string[]).includes(p.color),
+      'uses scrapbook festive palette',
+    );
+    assert.ok(p.durationMs >= 1850 && p.durationMs <= 2700);
+  }
+});

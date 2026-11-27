@@ -1,10 +1,15 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Heart, Mail, MailOpen } from 'lucide-react';
 import { SECRET_LETTER } from '../data/complimentsData';
 
+export interface EnvelopeOpenOrigin {
+  x: number;
+  y: number;
+}
+
 interface SecretEnvelopeCardProps {
   className?: string;
-  onEnvelopeOpen?: () => void;
+  onEnvelopeOpen?: (origin: EnvelopeOpenOrigin) => void;
 }
 
 export function SecretEnvelopeCard({
@@ -12,15 +17,25 @@ export function SecretEnvelopeCard({
   onEnvelopeOpen,
 }: SecretEnvelopeCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const sealButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const handleToggle = () => {
-    setIsOpen((prev) => {
-      const next = !prev;
-      if (next) {
-        onEnvelopeOpen?.();
-      }
-      return next;
-    });
+    const next = !isOpen;
+    setIsOpen(next);
+    if (next && onEnvelopeOpen) {
+      const rect = sealButtonRef.current?.getBoundingClientRect();
+      const x = rect
+        ? rect.left + rect.width / 2
+        : typeof window !== 'undefined'
+          ? window.innerWidth / 2
+          : 500;
+      const y = rect
+        ? rect.top + rect.height / 2
+        : typeof window !== 'undefined'
+          ? window.innerHeight * 0.62
+          : 420;
+      onEnvelopeOpen({ x, y });
+    }
   };
 
   return (
@@ -162,6 +177,7 @@ export function SecretEnvelopeCard({
 
               {/* Интерактивная сургучная печать в центре конверта */}
               <button
+                ref={sealButtonRef}
                 type="button"
                 onClick={handleToggle}
                 aria-expanded={isOpen}

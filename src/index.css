@@ -285,6 +285,183 @@
   animation-name: floating-heart-sway-d;
 }
 
+/* Праздничный салют из конфетти для секретного конверта (3 GPU-слоя: веер X, парабола Y, 3D-вращение) */
+.confetti-salute-x {
+  position: fixed;
+  display: block;
+  pointer-events: none;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform, opacity;
+  animation-timing-function: cubic-bezier(0.14, 0.82, 0.28, 1), linear;
+  animation-fill-mode: both, both;
+}
+
+.confetti-salute-y {
+  display: block;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
+  animation-fill-mode: both;
+}
+
+.confetti-salute-spin {
+  backface-visibility: visible;
+  will-change: transform;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes confetti-fade {
+  0% {
+    opacity: 0;
+  }
+  7% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 0.96;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 10 симметричных секторов разлёта (веер салюта влево-вправо) */
+@keyframes confetti-lane-0 {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(-210px, 0px, 0); }
+}
+@keyframes confetti-lane-1 {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(-155px, 0px, 0); }
+}
+@keyframes confetti-lane-2 {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(-105px, 0px, 0); }
+}
+@keyframes confetti-lane-3 {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(-60px, 0px, 0); }
+}
+@keyframes confetti-lane-4 {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(-22px, 0px, 0); }
+}
+@keyframes confetti-lane-5 {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(22px, 0px, 0); }
+}
+@keyframes confetti-lane-6 {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(60px, 0px, 0); }
+}
+@keyframes confetti-lane-7 {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(105px, 0px, 0); }
+}
+@keyframes confetti-lane-8 {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(155px, 0px, 0); }
+}
+@keyframes confetti-lane-9 {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(210px, 0px, 0); }
+}
+
+.confetti-lane-0 { animation-name: confetti-lane-0, confetti-fade; }
+.confetti-lane-1 { animation-name: confetti-lane-1, confetti-fade; }
+.confetti-lane-2 { animation-name: confetti-lane-2, confetti-fade; }
+.confetti-lane-3 { animation-name: confetti-lane-3, confetti-fade; }
+.confetti-lane-4 { animation-name: confetti-lane-4, confetti-fade; }
+.confetti-lane-5 { animation-name: confetti-lane-5, confetti-fade; }
+.confetti-lane-6 { animation-name: confetti-lane-6, confetti-fade; }
+.confetti-lane-7 { animation-name: confetti-lane-7, confetti-fade; }
+.confetti-lane-8 { animation-name: confetti-lane-8, confetti-fade; }
+.confetti-lane-9 { animation-name: confetti-lane-9, confetti-fade; }
+
+/* 4 баллистические параболы (быстрый выстрел вверх -> мягкое зависание в апексе -> плавное планирование вниз) */
+@keyframes confetti-arc-high {
+  0% {
+    transform: translate3d(0px, 0px, 0) scale(0.45);
+    animation-timing-function: cubic-bezier(0.16, 0.84, 0.44, 1);
+  }
+  34% {
+    transform: translate3d(0px, -255px, 0) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.82, 0.84);
+  }
+  100% {
+    transform: translate3d(0px, 110px, 0) scale(0.88);
+  }
+}
+
+@keyframes confetti-arc-mid {
+  0% {
+    transform: translate3d(0px, 0px, 0) scale(0.45);
+    animation-timing-function: cubic-bezier(0.16, 0.84, 0.44, 1);
+  }
+  32% {
+    transform: translate3d(0px, -195px, 0) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.82, 0.84);
+  }
+  100% {
+    transform: translate3d(0px, 130px, 0) scale(0.86);
+  }
+}
+
+@keyframes confetti-arc-wide {
+  0% {
+    transform: translate3d(0px, 0px, 0) scale(0.45);
+    animation-timing-function: cubic-bezier(0.16, 0.84, 0.44, 1);
+  }
+  30% {
+    transform: translate3d(0px, -145px, 0) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.82, 0.84);
+  }
+  100% {
+    transform: translate3d(0px, 145px, 0) scale(0.85);
+  }
+}
+
+@keyframes confetti-arc-soft {
+  0% {
+    transform: translate3d(0px, 0px, 0) scale(0.45);
+    animation-timing-function: cubic-bezier(0.16, 0.84, 0.44, 1);
+  }
+  36% {
+    transform: translate3d(0px, -225px, 0) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.82, 0.84);
+  }
+  100% {
+    transform: translate3d(0px, 95px, 0) scale(0.88);
+  }
+}
+
+.confetti-arc-high { animation-name: confetti-arc-high; }
+.confetti-arc-mid { animation-name: confetti-arc-mid; }
+.confetti-arc-wide { animation-name: confetti-arc-wide; }
+.confetti-arc-soft { animation-name: confetti-arc-soft; }
+
+/* Лёгкое 3D-кружение бумажного конфетти в воздухе */
+@keyframes confetti-spin-a {
+  0% { transform: rotate3d(1, 0.55, 0.25, 0deg); }
+  100% { transform: rotate3d(1, 0.55, 0.25, 360deg); }
+}
+
+@keyframes confetti-spin-b {
+  0% { transform: rotate3d(0.45, 1, 0.3, 0deg); }
+  100% { transform: rotate3d(0.45, 1, 0.3, -360deg); }
+}
+
+@keyframes confetti-spin-c {
+  0% { transform: rotate3d(0.8, 0.8, 0.5, 0deg); }
+  100% { transform: rotate3d(0.8, 0.8, 0.5, 360deg); }
+}
+
+.confetti-spin-a { animation-name: confetti-spin-a; }
+.confetti-spin-b { animation-name: confetti-spin-b; }
+.confetti-spin-c { animation-name: confetti-spin-c; }
+
 /* Композитный скролл-параллакс: строго CSS transform без конфликтов с touch-жестами */
 .parallax-gallery {
   touch-action: pan-y;

@@ -7,7 +7,11 @@ import {
   type MouseEvent,
 } from 'react';
 import { Heart, Sparkles } from 'lucide-react';
-import type { HeartSpawnRequest, PhotoMemory } from './types/tribute';
+import type {
+  ConfettiBurstRequest,
+  HeartSpawnRequest,
+  PhotoMemory,
+} from './types/tribute';
 import { AmbientChimeEngine } from './utils/ambientAudio';
 import {
   calculateParallaxOffsets,
@@ -19,13 +23,17 @@ import {
   toggleFlippedPhotoId,
 } from './utils/tributeLogic';
 import { LoveBurstOverlay } from './components/LoveBurstOverlay';
+import { ConfettiSaluteOverlay } from './components/ConfettiSaluteOverlay';
 import {
   PolaroidCard,
   type ParallaxCardHandle,
 } from './components/PolaroidCard';
 import { PhotoLightboxModal } from './components/PhotoLightboxModal';
 import { SupportButtonCard } from './components/SupportButtonCard';
-import { SecretEnvelopeCard } from './components/SecretEnvelopeCard';
+import {
+  SecretEnvelopeCard,
+  type EnvelopeOpenOrigin,
+} from './components/SecretEnvelopeCard';
 import { AmbientChimeButton } from './components/AmbientChimeButton';
 
 // ============================================================================
@@ -158,6 +166,8 @@ export default function App() {
   const [heartsSentCount, setHeartsSentCount] = useState(0);
   const [heartSpawnRequest, setHeartSpawnRequest] =
     useState<HeartSpawnRequest | null>(null);
+  const [confettiBurstRequest, setConfettiBurstRequest] =
+    useState<ConfettiBurstRequest | null>(null);
   const [flippedPhotoId, setFlippedPhotoId] = useState<string | null>(null);
   const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
   const [isAmbientPlaying, setIsAmbientPlaying] = useState(false);
@@ -406,16 +416,25 @@ export default function App() {
     [],
   );
 
-  const triggerEnvelopeCelebration = useCallback(() => {
+  const triggerEnvelopeCelebration = useCallback((origin?: EnvelopeOpenOrigin) => {
     spawnSeqRef.current += 1;
+    const seq = spawnSeqRef.current;
     const width = typeof window !== 'undefined' ? window.innerWidth : 800;
     const height = typeof window !== 'undefined' ? window.innerHeight : 700;
+    const x = origin ? origin.x : width / 2;
+    const y = origin ? origin.y : height * 0.65;
+
     setHeartSpawnRequest({
-      id: spawnSeqRef.current,
-      x: width / 2,
-      y: height * 0.68,
+      id: seq,
+      x,
+      y,
       count: 7,
       staggerMs: 110,
+    });
+    setConfettiBurstRequest({
+      id: seq,
+      x,
+      y,
     });
     audioEngineRef.current?.playSoftSparkle();
   }, []);
@@ -480,6 +499,9 @@ export default function App() {
 
       {/* Плавная современная анимация всплывающих сердечек */}
       <LoveBurstOverlay spawnRequest={heartSpawnRequest} />
+
+      {/* Праздничный салют из конфетти при открытии секретного конверта */}
+      <ConfettiSaluteOverlay burstRequest={confettiBurstRequest} />
 
       {/* Верхняя навигация в 3 чистые зоны */}
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between gap-8 px-5 py-6 sm:px-8 border-b border-[#2C2623]/[0.07]">

@@ -1,4 +1,7 @@
 import type {
+  ConfettiArcVariant,
+  ConfettiPiece,
+  ConfettiShape,
   FloatingHeart,
   LoveParticle,
   ParticleKind,
@@ -651,4 +654,108 @@ export function stepFloatingHearts(
 
   return next;
 }
+
+export const CONFETTI_SALUTE_PALETTE = [
+  '#C9686F', // тёплая пыльная роза
+  '#DFB468', // шампань-золото
+  '#E8A8A0', // нежный персик
+  '#F0CF8E', // мягкое золото
+  '#8CA38A', // шалфей
+  '#B5555E', // глубокая роза
+  '#F4DCD6', // пудровый розовый
+] as const;
+
+const CONFETTI_ARC_VARIANTS: readonly ConfettiArcVariant[] = [
+  'high',
+  'mid',
+  'wide',
+  'soft',
+];
+const CONFETTI_SHAPES: readonly ConfettiShape[] = [
+  'ribbon',
+  'ribbon',
+  'diamond',
+  'circle',
+];
+const CONFETTI_SPIN_VARIANTS: readonly ('a' | 'b' | 'c')[] = ['a', 'b', 'c'];
+
+/**
+ * Генерирует 2-волновой праздничный салют из конфетти с равномерным веером
+ * по обе стороны от точки открытия секретного конверта.
+ */
+export function createConfettiSalutePieces(
+  originX: number,
+  originY: number,
+  count: number,
+  startId = 1,
+  isCompactViewport = false,
+  rng: () => number = Math.random,
+): ConfettiPiece[] {
+  const safeCount = Math.max(0, Math.min(count, 80));
+  const pieces: ConfettiPiece[] = [];
+  const laneCount = 10; // 0..9 симметричный веер влево-вправо
+
+  for (let i = 0; i < safeCount; i += 1) {
+    const isSecondWave = i >= Math.floor(safeCount * 0.62);
+    const shape = CONFETTI_SHAPES[Math.floor(rng() * CONFETTI_SHAPES.length)];
+    const color =
+      CONFETTI_SALUTE_PALETTE[
+        Math.floor(rng() * CONFETTI_SALUTE_PALETTE.length)
+      ];
+    const arcVariant =
+      CONFETTI_ARC_VARIANTS[
+        Math.floor(rng() * CONFETTI_ARC_VARIANTS.length)
+      ];
+    const spinVariant =
+      CONFETTI_SPIN_VARIANTS[
+        Math.floor(rng() * CONFETTI_SPIN_VARIANTS.length)
+      ];
+
+    // Равномерное распределение по всем 10 секторам веера, чтобы салют всегда раскрывался красиво
+    const xLane = (i + Math.floor(rng() * 2)) % laneCount;
+
+    const jitterX = (rng() - 0.5) * (isCompactViewport ? 22 : 34);
+    const jitterY = (rng() - 0.5) * 14;
+
+    let width = 7;
+    let height = 14;
+    if (shape === 'circle') {
+      const d = Math.round(6 + rng() * 4);
+      width = d;
+      height = d;
+    } else if (shape === 'diamond') {
+      const s = Math.round(7 + rng() * 4);
+      width = s;
+      height = s;
+    } else {
+      width = Math.round(5 + rng() * 3);
+      height = Math.round(12 + rng() * 6);
+    }
+
+    const durationMs = Math.round(1850 + rng() * 850);
+    const spinDurationMs = Math.round(680 + rng() * 640);
+    const delayMs = isSecondWave
+      ? Math.round(150 + rng() * 140)
+      : Math.round(rng() * 90);
+
+    pieces.push({
+      id: startId + i,
+      x: originX + jitterX,
+      y: originY + jitterY,
+      xLane,
+      arcVariant,
+      spinVariant,
+      shape,
+      color,
+      width,
+      height,
+      durationMs,
+      spinDurationMs,
+      delayMs,
+    });
+  }
+
+  return pieces;
+}
+
 
