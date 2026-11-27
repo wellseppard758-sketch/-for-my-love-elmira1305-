@@ -20,10 +20,12 @@ import {
   formatRussianHeartsCount,
   getAdjacentPhotoIndex,
   shouldRunParallaxFrame,
+  shouldSkipWelcomeSplash,
   toggleFlippedPhotoId,
 } from './utils/tributeLogic';
 import { LoveBurstOverlay } from './components/LoveBurstOverlay';
 import { ConfettiSaluteOverlay } from './components/ConfettiSaluteOverlay';
+import { WelcomeSplashOverlay } from './components/WelcomeSplashOverlay';
 import {
   PolaroidCard,
   type ParallaxCardHandle,
@@ -176,8 +178,15 @@ export default function App() {
   const [flippedPhotoId, setFlippedPhotoId] = useState<string | null>(null);
   const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
   const [isAmbientPlaying, setIsAmbientPlaying] = useState(false);
+  const [showWelcomeSplash, setShowWelcomeSplash] = useState<boolean>(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    return !shouldSkipWelcomeSplash(window.location.search);
+  });
 
   const audioEngineRef = useRef<AmbientChimeEngine | null>(null);
+  const splashTimerRef = useRef<number | null>(null);
   const galleryRef = useRef<HTMLDivElement | null>(null);
   const heartIconRef = useRef<SVGSVGElement | null>(null);
   const spawnSeqRef = useRef(0);
@@ -196,6 +205,9 @@ export default function App() {
     return () => {
       engine.dispose();
       audioEngineRef.current = null;
+      if (splashTimerRef.current !== null) {
+        window.clearTimeout(splashTimerRef.current);
+      }
     };
   }, []);
 
@@ -494,6 +506,33 @@ export default function App() {
     }
   }, [isAmbientPlaying]);
 
+  const handleOpenWelcomeGift = useCallback((withMusic: boolean) => {
+    if (withMusic) {
+      const started = audioEngineRef.current?.start() ?? false;
+      setIsAmbientPlaying(started);
+    }
+
+    spawnSeqRef.current += 1;
+    const seq = spawnSeqRef.current;
+    const width = typeof window !== 'undefined' ? window.innerWidth : 800;
+    const height = typeof window !== 'undefined' ? window.innerHeight : 700;
+    setHeartSpawnRequest({
+      id: seq,
+      x: width / 2,
+      y: height * 0.56,
+      count: 4,
+      staggerMs: 120,
+    });
+
+    if (splashTimerRef.current !== null) {
+      window.clearTimeout(splashTimerRef.current);
+    }
+    splashTimerRef.current = window.setTimeout(() => {
+      splashTimerRef.current = null;
+      setShowWelcomeSplash(false);
+    }, 480);
+  }, []);
+
   const topRowPhotos = photosData.slice(0, 4);
   const bottomRowPhotos = photosData.slice(4, 6);
 
@@ -501,6 +540,12 @@ export default function App() {
     <div className="relative min-h-screen bg-[#FDFBF7] text-[#2C2623] overflow-x-clip">
       {/* Тонкая бумажная текстура поверх всего экрана */}
       <div className="paper-grain-overlay" aria-hidden="true" />
+
+      {/* Приветственная открытка-заставка с плавным включением мелодии */}
+      <WelcomeSplashOverlay
+        isVisible={showWelcomeSplash}
+        onOpenGift={handleOpenWelcomeGift}
+      />
 
       {/* Плавная современная анимация всплывающих сердечек */}
       <LoveBurstOverlay spawnRequest={heartSpawnRequest} />

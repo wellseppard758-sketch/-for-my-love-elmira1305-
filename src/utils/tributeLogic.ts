@@ -758,4 +758,36 @@ export function createConfettiSalutePieces(
   return pieces;
 }
 
+/**
+ * Определяет направление перелистывания фотографии по горизонтальному свайпу
+ * на сенсорном экране, игнорируя вертикальную прокрутку и случайные касания.
+ */
+export function evaluateSwipeNavigation(
+  deltaX: number,
+  deltaY: number,
+  elapsedMs = 250,
+): 'prev' | 'next' | null {
+  const absX = Math.abs(deltaX);
+  const absY = Math.abs(deltaY);
+  const minDistancePx = elapsedMs > 0 && elapsedMs < 220 ? 36 : 48;
 
+  if (absX < minDistancePx) {
+    return null;
+  }
+  if (absX <= absY * 1.25) {
+    return null;
+  }
+
+  return deltaX < 0 ? 'next' : 'prev';
+}
+
+/**
+ * Пропускает приветственную открытку-заставку только при явном параметре ?autostart=1.
+ */
+export function shouldSkipWelcomeSplash(search: string): boolean {
+  if (!search) {
+    return false;
+  }
+  const params = new URLSearchParams(search);
+  return params.get('autostart') === '1';
+}

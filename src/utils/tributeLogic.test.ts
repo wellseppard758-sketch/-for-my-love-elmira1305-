@@ -295,3 +295,27 @@ test('createConfettiSalutePieces produces balanced two-wave festive confetti bur
     assert.ok(p.durationMs >= 1850 && p.durationMs <= 2700);
   }
 });
+
+test('evaluateSwipeNavigation detects horizontal left/right swipes and ignores vertical scroll or jitter', async () => {
+  const { evaluateSwipeNavigation } = await import('./tributeLogic');
+
+  assert.equal(evaluateSwipeNavigation(-72, 10, 240), 'next');
+  assert.equal(evaluateSwipeNavigation(68, -14, 240), 'prev');
+  // Быстрый короткий свайп (>36px за <220ms) тоже срабатывает
+  assert.equal(evaluateSwipeNavigation(-40, 5, 140), 'next');
+  // Случайное мелкое касание не листает фото
+  assert.equal(evaluateSwipeNavigation(-22, 4, 200), null);
+  // Вертикальный скролл заметки не перехватывается как свайп
+  assert.equal(evaluateSwipeNavigation(-55, 80, 220), null);
+});
+
+test('shouldSkipWelcomeSplash skips splash only when autostart=1 query param is present', async () => {
+  const { shouldSkipWelcomeSplash } = await import('./tributeLogic');
+
+  assert.equal(shouldSkipWelcomeSplash(''), false);
+  assert.equal(shouldSkipWelcomeSplash('?foo=bar'), false);
+  assert.equal(shouldSkipWelcomeSplash('?autostart=0'), false);
+  assert.equal(shouldSkipWelcomeSplash('?autostart=1'), true);
+  assert.equal(shouldSkipWelcomeSplash('?ref=card&autostart=1'), true);
+});
+

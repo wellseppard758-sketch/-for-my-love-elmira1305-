@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type TouchEvent } from 'react';
 import { ChevronLeft, ChevronRight, Heart, X } from 'lucide-react';
 import type { PhotoMemory } from '../types/tribute';
-import { resolveAssetPath } from '../utils/tributeLogic';
+import {
+  evaluateSwipeNavigation,
+  resolveAssetPath,
+} from '../utils/tributeLogic';
 
 interface PhotoLightboxModalProps {
   photo: PhotoMemory | null;
@@ -19,9 +22,16 @@ export function PhotoLightboxModal({
   onNavigate,
 }: PhotoLightboxModalProps) {
   const [imageError, setImageError] = useState(false);
+  const [dragOffsetX, setDragOffsetX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     setImageError(false);
+    setDragOffsetX(0);
+    setIsDragging(false);
   }, [photo?.id]);
 
   useEffect(() => {
@@ -55,6 +65,63 @@ export function PhotoLightboxModal({
 
   const resolvedSrc = resolveAssetPath(photo.src, import.meta.env.BASE_URL);
 
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    if (event.touches.length !== 1) {
+      return;
+    }
+    const touch = event.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: performance.now(),
+    };
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    const start = touchStartRef.current;
+    if (!start || event.touches.length !== 1) {
+      return;
+    }
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+
+    // Показываем мягкий отклик только при явном горизонтальном жесте
+    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.15) {
+      const clamped = Math.max(-72, Math.min(72, deltaX * 0.55));
+      setDragOffsetX(clamped);
+    } else {
+      setDragOffsetX(0);
+    }
+  };
+
+  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    setIsDragging(false);
+    setDragOffsetX(0);
+
+    if (!start || event.changedTouches.length === 0) {
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const elapsedMs = performance.now() - start.time;
+    const direction = evaluateSwipeNavigation(deltaX, deltaY, elapsedMs);
+    if (direction) {
+      onNavigate(direction);
+    }
+  };
+
+  const handleTouchCancel = () => {
+    touchStartRef.current = null;
+    setIsDragging(false);
+    setDragOffsetX(0);
+  };
+
   return (
     <div
       role="dialog"
@@ -76,14 +143,30 @@ export function PhotoLightboxModal({
           <X className="h-5 w-5" aria-hidden="true" />
         </button>
 
-        {/* Фотография в уютной рамке */}
-        <div className="relative flex w-full items-center justify-center bg-[#FAF0ED] p-4 sm:p-6 md:w-[58%]">
-          <div className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-[#FFFDF9] p-2.5 scrapbook-shadow">
+        {/* Фотография в уютной рамке с поддержкой свайпа влево/вправо на телефоне */}
+        <div
+          data-testid="lightbox-swipe-area"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
+          className="relative flex w-full flex-col items-center justify-center bg-[#FAF0ED] p-4 sm:p-6 md:w-[58%] touch-pan-y select-none"
+        >
+          <div
+            style={{
+              transform: `translate3d(${dragOffsetX}px, 0, 0)`,
+              transition: isDragging
+                ? 'none'
+                : 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+            className="relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-[#FFFDF9] p-2.5 scrapbook-shadow will-change-transform"
+          >
             {!imageError ? (
               <img
                 src={resolvedSrc}
                 alt={photo.alt}
                 referrerPolicy="no-referrer"
+                draggable={false}
                 onError={() => setImageError(true)}
                 className="mx-auto max-h-[46vh] w-auto max-w-full rounded-xl object-contain md:max-h-[68vh]"
               />
@@ -94,6 +177,9 @@ export function PhotoLightboxModal({
               </div>
             )}
           </div>
+          <p className="mt-2.5 text-[11px] font-medium text-[#6A5D57]/80 md:hidden">
+            Свайпни фото влево или вправо, чтобы листать
+          </p>
         </div>
 
         {/* Рукописная заметка и навигация */}
